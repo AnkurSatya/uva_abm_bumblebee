@@ -1,3 +1,4 @@
+from xml.etree.ElementInclude import include
 from environment import *
 from mesa import Agent
 import random
@@ -42,12 +43,12 @@ class Bee(Agent):
 		if flowers_patch.nectar_level > threshold: # set the number to the treshold
 			self.isCollecting = True
 
-	def collect(self):
+	def collect(self, flower_patch):
 		'''
 		This method should collect the nectar from the cell.
 		'''
 		self.health_level += 4672462 # set this number
-		flowers_patch.nectar_level -= 4672462 # set this number 
+		flower_patch.withdraw_nectar(4672462) # set this number 
 		self.isCollecting = True
 
 	def back_to_hive(self):
@@ -96,7 +97,7 @@ class Worker(Bee):
 				self.back_to_hive(self.hive_pos)
 
 		elif self.isCollecting == True:
-			self.collect()
+			self.isCollecting = False
 		else: # Not full neither collecting, then the bee should move
 			if self.last_resource != self.hive_pos: # if position is saved, then go there
 				self.towards_resource(self.last_resource) # TODO : this can take multiple time steps...
@@ -150,30 +151,44 @@ class Queen(Bee):
 		'''
 		Defines behaviour for one timestep.
 		'''
-		# in the hive and full on nectar
+		# in hive and full on nectar
 		if self.pos == self.hive.pos and self.health_level == self.nectar_needed:
 			return
 
+		# spend a timestep mating
 		if self.isMating:
 			self.isMating = False
 			return
 
-		# if there is male drone from a different hive at current position
-			self.mate(drone)
+		cur_cell_contents = self.model.grid.get_neighbors(self.pos, moore=True, include_center=True, radius=0)
+
+		# check for possibility of mating with drone from different hive
+		drones = [item for item in cur_cell_contents if isinstance(item, Drone) and item.hive != self.hive]
+		if len(drones):
+			self.mate(random.choice(drones))
 			return
 
-		# spend one timestep collecting resources, cannot do anything else
+		# spend a timestep collecting resources
 		if self.isCollecting:
 			self.isCollecting = False
-
+		
 		else:
+			# head back to hive since full on nectar
 			if self.health_level == self.nectar_needed:
 				self.back_to_hive()
 			else:
-				# if there is good source of nectar at current position
-					self.collect()
+				# need to move towards last_resource
+				if self.last_resource:
+					self.towards_resource()
 				else:
-					if self.last_resource:
-						self.towards_resource()
+					self.random_move()
+
+				# we have arrived at last_resource or we have just executed some random move
+				if not self.last_resource or self.pos == self.last_resource:
+					flower_patch = [item for item in cur_cell_contents if isinstance(item, FlowerPatch)]
+					if flower_patch.nectar_units > 0:
+						self.collect(flower_patch)
+					if flower_patch.nectar_units == 0 :
+						self.last_resource = None
 					else:
-						self.random_move()
+						self.last_resource = self.pos
