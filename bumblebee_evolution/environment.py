@@ -25,7 +25,7 @@ class FlowerPatch(object):
         Actions to be taken for a flower patch at every time step. 
         1. replenish the flower patch with nectar.
         """
-        self.nectar_units = max(self.max_nectar_units, self.nectar_units + self.replenishing_quantity)
+        self.nectar_units = min(self.max_nectar_units, self.nectar_units + self.replenishing_quantity)
 
 
 """Class for the hives"""
