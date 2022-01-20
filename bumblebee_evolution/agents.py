@@ -34,15 +34,17 @@ class Bee(Agent):
 		# moving the agent to the new position
 		self.model.grid.move_agent(self, new_pos)
 
-	def check_cell(self, threshold):
+	def check_cell_for_nectar(self, threshold=12345):
 		'''
 		This method should check if the cell is good enough to start collecting food.
 		'''
 		# content of the cell in the current position
 		cell_concents = self.model.grid.get_cell_list_contents([self.pos])
-		flowers_patch = [obj for obj in cell_concents if isinstance(obj, FlowerPatch)][0]
-		if flowers_patch.nectar_level > threshold: # set the number to the treshold
-			self.isCollecting = True
+		flower_patch = [obj for obj in cell_concents if isinstance(obj, FlowerPatch)]
+		if flower_patch and flower_patch[0].nectar_units > threshold:
+			return flower_patch[0]
+		else:
+			return False
 
 	def collect(self, flower_patch):
 		'''
@@ -93,7 +95,6 @@ class Worker(Bee):
 				self.drop_nectar()
 			else:
 				self.back_to_hive()
-
 		elif self.isCollecting == True:
 			self.isCollecting = False
 		else: # Not full neither collecting, then the bee should move
@@ -162,13 +163,8 @@ class Queen(Bee):
 		# spend a timestep collecting resources, no movement
 		elif self.isCollecting:
 			self.isCollecting = False
-			cur_cell_contents = self.model.grid.get_neighbors(self.pos, moore=True, include_center=True, radius=0)
-			flower_patch = [item for item in cur_cell_contents if isinstance(item, FlowerPatch)]
-			if flower_patch:
-				flower_patch = flower_patch[0]
-				#  # TODO : condition for storing last_resource may need to be modified
-				if flower_patch.nectar_units > 0:
-					self.last_resource = self.pos
+			if self.check_cell_for_nectar():
+				self.last_resource = self.pos
 			return
 
 		# movement required, determine direction
@@ -183,7 +179,7 @@ class Queen(Bee):
 				self.random_move()
 
 		# gather cell contents after moving
-		cur_cell_contents = self.model.grid.get_neighbors(self.pos, moore=True, include_center=True, radius=0)
+		cur_cell_contents = self.model.grid.get_cell_list_contents([self.pos])
 
 		# prioritize possibility of mating with drone from different hive
 		if not self.fertilized:
@@ -195,11 +191,9 @@ class Queen(Bee):
 
 		# did not mate, and we have either reached last_resource or executed a random move
 		if not self.last_resource or self.pos == self.last_resource:
-			flower_patch = [item for item in cur_cell_contents if isinstance(item, FlowerPatch)]
+			flower_patch = self.check_cell_for_nectar()
 			if flower_patch:
-				flower_patch = flower_patch[0]
-				if flower_patch.nectar_units > 0:
-					# next timestep will be spent collecting
-					self.collect(flower_patch)
-				else:
-					self.last_resource = None
+				# next timestep will be spent collecting
+				self.collect(flower_patch)
+			else:
+				self.last_resource = None
