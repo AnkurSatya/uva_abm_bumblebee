@@ -1,3 +1,4 @@
+from environment import *
 from mesa import Agent
 import random
 
@@ -48,7 +49,7 @@ class Bee(Agent):
 		self.health_level += 4672462 # set this number
 		flowers_patch.nectar_level -= 4672462 # set this number 
 		self.isCollecting = True
-	
+
 	def back_to_hive(self):
 		# we need to find a method to move towards the hive (located at self.hive.pos)
 		# take one step towards the hive using shortest path?
@@ -60,7 +61,7 @@ class Bee(Agent):
 		# or this is called once, and the bee will automatically move towards the resource for however many time steps are needed
 		return
 
-		
+
 class Worker(Bee):
 	def __init__(self, unique_id, model, hive, pos, health=236):
 		"""
@@ -77,13 +78,6 @@ class Worker(Bee):
 		self.max_nectar = 40 # set this number
 		self.nectar_needed = health
 		self.stored_nectar = 0
-
-	def collect(self):
-		'''
-		This method should collect the nectar from the cell.
-		'''
-		self.stored_nectar += 4672462 # set this number
-		flowers_patch.nectar_level -= 4672462 # set this number 
 	
 	def drop_nectar(self):
 		'''
@@ -179,4 +173,7 @@ class Queen(Bee):
 				# if there is good source of nectar at current position
 					self.collect()
 				else:
-					self.random_move()
+					if self.last_resource:
+						self.towards_resource()
+					else:
+						self.random_move()
