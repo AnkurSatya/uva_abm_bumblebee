@@ -1,18 +1,25 @@
-from mesa import Model
-from mesa.space import MultiGrid
 from mesa import Agent
 import random
 
 
 class Bee(Agent):
-    def __init__(self, unique_id, model, pos, hive_pos):
+    def __init__(self, unique_id, model, pos, associated_hive):
+        """
+        Args:
+            unique_id (int): unique id for the bee.
+            model (BeeEvolutionModel): the model being used for the simulations.
+            pos (tuple(int, int)): The position of the bee in the environment.
+            associated_hive (Hive): the original hive of the bee
+        """
         super().__init__(unique_id, model)
 
-        self.hive_id = hive_pos
+        self.name = "Bee"
+        self.associated_hive = associated_hive
+        self.hive_pos = associated_hive.pos
         self.pos = pos
         self.isCollecting = False
-        self.health_level
-        self.last_resource = hive_pos
+        self.health_level = 0
+        self.last_resource = self.hive_pos
 
     def random_move(self):
         '''
@@ -32,16 +39,9 @@ class Bee(Agent):
         flowers_patch = [obj for obj in this_cell if isinstance(obj, flowers_patch)][0]
         if flowers_patch.nectar_level > treshold: # set the number to the treshold
             self.isCollecting = True
-
-    def collect(self):
-        '''
-        This method should collect the nectar from the cell.
-        '''
-        self.health_level += 4672462 # set this number
-        flowers_patch.nectar_level -= 4672462 # set this number 
     
-    def back_to_hive(self, hive_pos):
-        # we need to find a method to move towards the hive
+    def back_to_hive(self):
+        # we need to find a method to move towards the hive. Use self.hive_pos for hive position.
         return
 
     def towards_resource(self, last_resource):
