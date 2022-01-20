@@ -60,6 +60,7 @@ class Bee(Agent):
 		difference = self.pos - self.last_resource
 		self.model.grid.move_agent(self, (np.sign(difference[0]), np.sign(difference[1])))
 
+
 class Worker(Bee):
 	def __init__(self, unique_id, model, hive, pos, health=236):
 		"""
@@ -81,7 +82,7 @@ class Worker(Bee):
 		'''
 		This method should drop the nectar in the hive.
 		'''
-		self.hive.nectar_level += self.stored_nectar
+		self.hive.nectar_units += self.stored_nectar
 		self.stored_nectar = 0
 
 	def step(self):
