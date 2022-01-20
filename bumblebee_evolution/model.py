@@ -40,14 +40,14 @@ class BeeEvolutionModel(Model):
         # 1. Keep a dictionary which has key as a grid cell and the value as the flower patch object
         # 2. A function to return the flower patch agent at a cell
 
-        self.setup()
+        self.setup_hives_and_bees()
+        self.setup_flower_patches()
 
-    def setup(self):
+    def setup_hives_and_bees(self):
         """
-        Creates all hives, flower patches and bees. Then sets them up in the environment.
+        Creates all hives and bees. Then sets them up in the environment.
         """
         
-        # Setting up the hives and the bees.
         for i in range(self.num_hives):
             pos = None #Decide how to evaluate the position of a new hive
             new_hive = Hive(i+1, pos, 0)
