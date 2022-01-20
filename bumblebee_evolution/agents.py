@@ -136,6 +136,25 @@ class Drone(Bee):
 		self.name = "Drone"
 		self.nectar_needed = health
 
+	def step(self):
+		"""
+		Drone behaviour in one step
+		"""
+
+		# spend a timestep collecting food
+		if self.isCollecting:
+			self.isCollecting = False
+			return
+
+		# if the bee is hungry and there is nectar in the current cell, consume
+		flower_patch = self.check_cell_for_nectar()
+		if self.health_level < self.nectar_needed and flower_patch:
+			self.collect(flower_patch)
+			
+		# we are not hungry or there was no food in current cell, so take a random step
+		self.random_move()
+
+
 
 class Queen(Bee):
 	def __init__(self, unique_id, model, hive, pos, health=740, fertilized=False, isMating=False):
