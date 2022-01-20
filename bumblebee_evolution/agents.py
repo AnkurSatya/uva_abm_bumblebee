@@ -1,6 +1,7 @@
 from xml.etree.ElementInclude import include
 from environment import *
 from mesa import Agent
+import numpy as np
 import random
 
 class Bee(Agent):
@@ -52,16 +53,12 @@ class Bee(Agent):
 		self.isCollecting = True
 
 	def back_to_hive(self):
-		# we need to find a method to move towards the hive (located at self.hive.pos)
-		# take one step towards the hive using shortest path?
-		return
+		difference = self.pos - self.hive.pos
+		self.model.grid.move_agent(self, (np.sign(difference[0]), np.sign(difference[1])))
 
-	def towards_resource(self, last_resource):
-		# we need to find a method to move towards the last resource
-		# this can take multiple time steps... either we call this function each timestep and move one cell towards resource
-		# or this is called once, and the bee will automatically move towards the resource for however many time steps are needed
-		return
-
+	def towards_resource(self):
+		difference = self.pos - self.last_resource
+		self.model.grid.move_agent(self, (np.sign(difference[0]), np.sign(difference[1])))
 
 class Worker(Bee):
 	def __init__(self, unique_id, model, hive, pos, health=236):
@@ -94,13 +91,13 @@ class Worker(Bee):
 			if self.pos == self.hive_pos:
 				self.drop_nectar()
 			else:
-				self.back_to_hive(self.hive_pos)
+				self.back_to_hive()
 
 		elif self.isCollecting == True:
 			self.isCollecting = False
 		else: # Not full neither collecting, then the bee should move
 			if self.last_resource != self.hive_pos: # if position is saved, then go there
-				self.towards_resource(self.last_resource) # TODO : this can take multiple time steps...
+				self.towards_resource()
 				self.check_cell(478297429) # set the treshold
 			else: 
 				# Moving the bee
@@ -125,7 +122,7 @@ class Drone(Bee):
 
 
 class Queen(Bee):
-	def __init__(self, unique_id, model, hive, pos, health=740, fertilized=False):
+	def __init__(self, unique_id, model, hive, pos, health=740, fertilized=False, isMating=False):
 		"""
 		Args:
 			unique_id (int): unique id for the bee.
@@ -134,13 +131,14 @@ class Queen(Bee):
 			pos (tuple(int, int)): The position of the bee in the environment.
 			health (int): amount of nectar needed per day.
 			fertilized (bool): whether queen has been fertilized or not.
+			isMating (bool): indicates whether queen is currently mating.
 		"""
 		super().__init__(unique_id, model, hive, pos, health)
 
 		self.name = "Queen"
 		self.nectar_needed = health
 		self.fertilized = fertilized
-		self.isMating = False
+		self.isMating = isMating
 
 	def mate(self, drone):
 		self.fertilized = True
@@ -193,8 +191,8 @@ class Queen(Bee):
 				# next timestep will be spent mating
 				self.mate(random.choice(drones))
 				return
-		
-		# we have arrived at last_resource or we have just executed some random move
+
+		# did not mate, and we have either reached last_resource or executed a random move
 		if not self.last_resource or self.pos == self.last_resource:
 			flower_patch = [item for item in cur_cell_contents if isinstance(item, FlowerPatch)]
 			if flower_patch:
