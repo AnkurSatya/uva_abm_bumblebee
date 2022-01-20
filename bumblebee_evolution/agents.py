@@ -1,4 +1,3 @@
-from xml.etree.ElementInclude import include
 from environment import *
 from mesa import Agent
 import numpy as np
@@ -26,10 +25,12 @@ class Bee(Agent):
 		'''
 		This method should get the neighbouring cells (Moore's neighbourhood), select one, and move the agent to this cell.
 		'''
+		neighbouring_cells = self.model.grid.get_neighborhood(self.pos, moore=True)
+		if self.hive.pos in neighbouring_cells:
+			neighbouring_cells.remove(self.hive.pos)
+
 		# selecting new positiom
 		new_pos = random.choice(self.model.grid.get_neighborhood(self.pos, moore=True))
-		
-		# TODO : need to avoid randomly moving back to the hive, or outside of the grid?
 
 		# moving the agent to the new position
 		self.model.grid.move_agent(self, new_pos)
@@ -87,24 +88,37 @@ class Worker(Bee):
 		self.hive.nectar_units += self.stored_nectar
 		self.stored_nectar = 0
 
+	def collect(self, flower_patch):
+		self.stored_nectar += 4672462 # set this number
+		flower_patch.withdraw_nectar(4672462) # set this number 
+		self.isCollecting = True
+
+
 	def step(self):
 		'''
 		'''
 		if self.stored_nectar == self.max_nectar: # If nectar stored is max, then either go back to the hive or drop the nectar
-			if self.pos == self.hive_pos:
+			if self.pos == self.hive.pos:
 				self.drop_nectar()
 			else:
 				self.back_to_hive()
 		elif self.isCollecting == True:
 			self.isCollecting = False
 		else: # Not full neither collecting, then the bee should move
-			if self.last_resource != self.hive_pos: # if position is saved, then go there
+			if self.last_resource: # if position is saved, then go there
 				self.towards_resource()
-				self.check_cell(478297429) # set the treshold
 			else: 
 				# Moving the bee
 				self.random_move()
-				self.check_cell(478297429) # set the treshold to a different value
+
+			# did not mate, and we have either reached last_resource or executed a random move
+			if not self.last_resource or self.pos == self.last_resource:
+				flower_patch = self.check_cell_for_nectar()
+				if flower_patch:
+					# next timestep will be spent collecting
+					self.collect(flower_patch)
+				else:
+					self.last_resource = None
 
 
 class Drone(Bee):
@@ -145,7 +159,6 @@ class Queen(Bee):
 	def mate(self, drone):
 		self.fertilized = True
 		self.model.grid.remove_agent(drone)
-
 
 	def step(self):
 		'''
