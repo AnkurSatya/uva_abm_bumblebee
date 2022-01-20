@@ -1,12 +1,8 @@
 ## Class for the Bee evolution model.
-
 from mesa import Model
 from mesa.space import MultiGrid
-from environment_hive import Hive
-from environment_flower_patch import FlowerPatch
-from agent_male_bee import MaleBee
-from agent_worker_bee import WorkerBee
-from agent_queen_bee import QueenBee
+from environment import *
+from agents import *
 
 
 class BeeEvolutionModel(Model):
@@ -47,13 +43,10 @@ class BeeEvolutionModel(Model):
         """
         Creates all hives and bees. Then sets them up in the environment.
         """
-        
         for i in range(self.num_hives):
             pos = None #Decide how to evaluate the position of a new hive
-            new_hive = Hive(i+1, pos, 0)
 
             hive_associated_bees = []
-
             tmp = self.initial_bees_per_hive
             for bee_class, ratio in self.initial_bee_type_ratio:
                 num_bees_of_type = min(tmp, ratio*self.initial_bees_per_hive)
@@ -62,8 +55,8 @@ class BeeEvolutionModel(Model):
                 for j in range(num_bees_of_type):
                     new_bee = self.new_agent(bee_class, pos)
                     hive_associated_bees.append(new_bee)
-                
-            new_hive.add_bees_to_hive(hive_associated_bees)
+
+            new_hive = Hive(i+1, pos, 0, hive_associated_bees)
             self.hives.append(new_hive)
 
     def setup_flower_patches(self):
