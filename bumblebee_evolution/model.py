@@ -43,11 +43,13 @@ class BeeEvolutionModel(Model):
         Evaluates the initial proportion of bee types for all the hives.
         """
         type_ratio = {}
-        tmp = 1.0
-        for bee_type in [Drone, Worker, Queen]:
-            ratio = random.uniform(0, tmp)
-            ratio[bee_type] = ratio
-            tmp-= ratio
+        
+        ratios = [self.random.uniform(0, 1) for _ in range(3)]
+        ratios = [ratio/sum(ratios) for ratio in ratios]
+
+        for i, bee_type in enumerate([Drone, Worker, Queen]):
+            type_ratio[bee_type] = ratios[i]
+
         return type_ratio
 
     def setup_hives_and_bees(self):
