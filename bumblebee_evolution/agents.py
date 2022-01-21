@@ -290,8 +290,12 @@ class FlowerPatch(Agent):
 		self.replenishing_quantity = self.base_replenishing_quantity
 
 	def update_flower_patch(self, more_nectar):
+		"""
+		Increases the size of the flower patch by an amount given by more_nectar
+		"""
+		self.flower_patch_size +=1 
 		self.nectar_units += more_nectar
-		self.max_nectar_units = self.nectar_units
+		self.max_nectar_units += more_nectar
 		self.replenishing_quantity = self.base_replenishing_quantity * self.flower_patch_size
 
 	def withdraw_nectar(self, nectar_drawn):

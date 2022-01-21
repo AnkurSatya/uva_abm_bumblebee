@@ -83,7 +83,7 @@ class BeeEvolutionModel(Model):
 
     def setup_flower_patches(self):
         """
-        Creates a flower patch and sets it up.
+        Creates all the flower patches in the environment.
         """
         hives_pos = {hive.pos for hive in self.hives}
         num_cells_for_flower_patch = self.height*self.width - len(hives_pos)
@@ -98,7 +98,6 @@ class BeeEvolutionModel(Model):
             cell_concents = self.grid.get_cell_list_contents([pos])
             flower_patch = [obj for obj in cell_concents if isinstance(obj, FlowerPatch)]
             if flower_patch:
-                flower_patch[0].flower_patch_size += 1
                 flower_patch[0].update_flower_patch(nectar_for_one_patch)
             else:
                 self.new_agent(FlowerPatch, pos, nectar_for_one_patch)
