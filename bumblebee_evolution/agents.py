@@ -1,40 +1,62 @@
-from xml.etree.ElementInclude import include
 from environment import *
 from mesa import Agent
 import numpy as np
 import random
 
 class Bee(Agent):
-	def __init__(self, unique_id, model, pos, hive, health):
+	def __init__(self, unique_id, model, pos, hive, nectar_needed):
 		"""
 		Args:
 			unique_id (int): unique id for the bee.
 			model (BeeEvolutionModel): the model being used for the simulations.
 			pos (tuple(int, int)): The position of the bee in the environment.
 			hive (Hive): the original hive of the bee
-			health (int): amount of nectar needed per day
+			nectar_needed (int): nectar needed per day
 		"""
 		super().__init__(unique_id, model)
 
 		self.hive = hive
 		self.pos = pos
+		self.nectar_needed = nectar_needed
+		self.health_level = nectar_needed # health is full upon initialization
 		self.isCollecting = False
-		self.health_level = health
 		self.last_resource = None
+		self.encounters = {
+			Worker:{"own_hive":set(), "other_hive":set()},
+			Drone:{"own_hive":set(), "other_hive":set()},
+			Queen:{"own_hive":set(), "other_hive":set()}
+		}
+
+	def update_encounters(self):
+		cell_contents = self.model.grid.get_cell_list_contents([self.pos])
+		for item in cell_contents:
+			if isinstance(item, Bee):
+				# check if bees originate from same hive
+				if item.hive == self.hive:
+					hive_category = "own_hive"
+				else:
+					hive_category = "other_hive"
+				# adjust self encounters dictionary
+				self.encounters[item.bee_type][hive_category].add(item.unique_id)
+				# adjust other bee's encounters dictionary
+				item.encounters[self.bee_type][hive_category].add(self.unique_id)
 
 	def random_move(self):
 		'''
 		This method should get the neighbouring cells (Moore's neighbourhood), select one, and move the agent to this cell.
 		'''
+		neighbouring_cells = self.model.grid.get_neighborhood(self.pos, moore=True)
+		if self.hive.pos in neighbouring_cells:
+			neighbouring_cells.remove(self.hive.pos)
+
 		# selecting new positiom
 		new_pos = random.choice(self.model.grid.get_neighborhood(self.pos, moore=True))
-		
-		# TODO : need to avoid randomly moving back to the hive, or outside of the grid?
 
 		# moving the agent to the new position
 		self.model.grid.move_agent(self, new_pos)
+		self.update_encounters()
 
-	def check_cell_for_nectar(self, threshold=12345):
+	def check_cell_for_nectar(self, threshold=10): # TODO : update threshold value?
 		'''
 		This method should check if the cell is good enough to start collecting food.
 		'''
@@ -50,35 +72,39 @@ class Bee(Agent):
 		'''
 		This method should collect the nectar from the cell.
 		'''
-		self.health_level += 4672462 # set this number
-		flower_patch.withdraw_nectar(4672462) # set this number 
+		amount_to_withdraw = min(self.nectar_needed - self.health_level, flower_patch.nectar_units)
+		self.health_level += amount_to_withdraw
+		flower_patch.withdraw_nectar(amount_to_withdraw)
 		self.isCollecting = True
 
-	def back_to_hive(self):
-		difference = self.pos - self.hive.pos
+	def move_towards_hive(self):
+		difference = np.array(self.pos) - np.array(self.hive.pos)
 		self.model.grid.move_agent(self, (np.sign(difference[0]), np.sign(difference[1])))
+		if self.pos != self.hive.pos: # TODO : shouldn't count the hive members, right?
+			self.update_encounters()
 
-	def towards_resource(self):
-		difference = self.pos - self.last_resource
+	def move_towards_resource(self):
+		difference = np.array(self.pos) - np.array(self.last_resource)
 		self.model.grid.move_agent(self, (np.sign(difference[0]), np.sign(difference[1])))
+		self.update_encounters()
 
 
 class Worker(Bee):
-	def __init__(self, unique_id, model, hive, pos, health=236):
+	def __init__(self, unique_id, model, hive, pos, nectar_needed=236):
 		"""
         Args:
             unique_id (int): unique id for the bee.
             model (BeeEvolutionModel): the model being used for the simulations.
 			hive (Hive): the original hive of the bee
             pos (tuple(int, int)): The position of the bee in the environment.
-			health (int): amount of nectar needed per day
+			nectar_needed (int): amount of nectar needed per day
         """
-		super().__init__(unique_id, model, hive, pos, health)
+		super().__init__(unique_id, model, pos, hive, nectar_needed)
 
 		self.name = "Worker"
-		self.max_nectar = 40 # set this number
-		self.nectar_needed = health
+		self.max_nectar = 44  # bumble bees carry average of ~25% their body weight, which is 150-200mg, so about 44mg
 		self.stored_nectar = 0
+		self.bee_type = Worker
 	
 	def drop_nectar(self):
 		'''
@@ -87,65 +113,101 @@ class Worker(Bee):
 		self.hive.nectar_units += self.stored_nectar
 		self.stored_nectar = 0
 
+	def collect(self, flower_patch):
+		# worker bees cannot directly replenish their own health, that happens in the hive at end of day
+		amount_to_withdraw = min(self.max_nectar-self.stored_nectar, flower_patch.nectar_units)
+		flower_patch.withdraw_nectar(amount_to_withdraw)
+		self.stored_nectar += amount_to_withdraw
+		self.isCollecting = True
+
 	def step(self):
 		'''
+		Worker behaviour in one step
 		'''
 		if self.stored_nectar == self.max_nectar: # If nectar stored is max, then either go back to the hive or drop the nectar
-			if self.pos == self.hive_pos:
+			if self.pos == self.hive.pos:
 				self.drop_nectar()
 			else:
-				self.back_to_hive()
+				self.move_towards_hive()
+
 		elif self.isCollecting == True:
 			self.isCollecting = False
-		else: # Not full neither collecting, then the bee should move
-			if self.last_resource != self.hive_pos: # if position is saved, then go there
-				self.towards_resource()
-				self.check_cell(478297429) # set the treshold
+
+		else: # neither full nor collecting, then the bee should move
+			if self.last_resource:
+				self.move_towards_resource()
 			else: 
-				# Moving the bee
+				# move the bee
 				self.random_move()
-				self.check_cell(478297429) # set the treshold to a different value
+
+			# we have just executed a random move, or have reached last_resource
+			if not self.last_resource or self.pos == self.last_resource:
+				flower_patch = self.check_cell_for_nectar()
+				if flower_patch:
+					# next timestep will be spent collecting
+					self.collect(flower_patch)
+				else:
+					self.last_resource = None
 
 
 class Drone(Bee):
-	def __init__(self, unique_id, model, hive, pos, health=236):
+	def __init__(self, unique_id, model, hive, pos, nectar_needed=236):
 		"""
         Args:
             unique_id (int): unique id for the bee.
             model (BeeEvolutionModel): the model being used for the simulations.
 			hive (Hive): the original hive of the bee.
             pos (tuple(int, int)): The position of the bee in the environment.
-			health (int): amount of nectar needed per day.
+			nectar_needed (int): amount of nectar needed per day.
         """
-		super().__init__(unique_id, model, pos, hive, health)
+		super().__init__(unique_id, model, pos, hive, nectar_needed)
 
 		self.name = "Drone"
-		self.nectar_needed = health
+		self.bee_type = Drone
+
+	def step(self):
+		"""
+		Drone behaviour in one step
+		"""
+		# spend a timestep collecting food
+		if self.isCollecting:
+			self.isCollecting = False
+			if self.health_level < self.nectar_needed and self.check_cell_for_nectar():
+				self.last_resource = self.pos
+			return
+
+		# take a random step
+		self.random_move()
+
+		# if the bee is hungry and there is nectar in the current cell, consume
+		if self.health_level < self.nectar_needed:
+			flower_patch = self.check_cell_for_nectar()
+			if flower_patch:
+				self.collect(flower_patch)
 
 
 class Queen(Bee):
-	def __init__(self, unique_id, model, hive, pos, health=740, fertilized=False, isMating=False):
+	def __init__(self, unique_id, model, hive, pos, nectar_needed=740, fertilized=False, isMating=False):
 		"""
 		Args:
 			unique_id (int): unique id for the bee.
 			model (BeeEvolutionModel): the model being used for the simulations.
 			hive (Hive): the original hive of the bee.
 			pos (tuple(int, int)): The position of the bee in the environment.
-			health (int): amount of nectar needed per day.
+			nectar_needed (int): amount of nectar needed per day.
 			fertilized (bool): whether queen has been fertilized or not.
 			isMating (bool): indicates whether queen is currently mating.
 		"""
-		super().__init__(unique_id, model, hive, pos, health)
+		super().__init__(unique_id, model, pos, hive, nectar_needed)
 
 		self.name = "Queen"
-		self.nectar_needed = health
 		self.fertilized = fertilized
 		self.isMating = isMating
+		self.bee_type = Queen
 
 	def mate(self, drone):
 		self.fertilized = True
 		self.model.grid.remove_agent(drone)
-
 
 	def step(self):
 		'''
@@ -163,17 +225,18 @@ class Queen(Bee):
 		# spend a timestep collecting resources, no movement
 		elif self.isCollecting:
 			self.isCollecting = False
-			if self.check_cell_for_nectar():
-				self.last_resource = self.pos
 			return
 
 		# movement required, determine direction
 		if self.health_level == self.nectar_needed:
-			self.back_to_hive()
+			# store last_resource if nectar is available before returning to hive
+			if self.check_cell_for_nectar():
+				self.last_resource = self.pos
+			self.move_towards_hive()
 		else:
 			# move towards last_resource if available
 			if self.last_resource:
-				self.towards_resource()
+				self.move_towards_resource()
 			# otherwise random walk
 			else:
 				self.random_move()
@@ -189,11 +252,12 @@ class Queen(Bee):
 				self.mate(random.choice(drones))
 				return
 
-		# did not mate, and we have either reached last_resource or executed a random move
-		if not self.last_resource or self.pos == self.last_resource:
-			flower_patch = self.check_cell_for_nectar()
-			if flower_patch:
-				# next timestep will be spent collecting
-				self.collect(flower_patch)
-			else:
-				self.last_resource = None
+		# did not mate, and we have just executed a random move, or have reached last_resource and need more nectar
+		if self.health_level < self.nectar_needed:
+			if not self.last_resource or self.pos == self.last_resource:
+				flower_patch = self.check_cell_for_nectar()
+				if flower_patch:
+					# next timestep will be spent collecting
+					self.collect(flower_patch)
+				else:
+					self.last_resource = None
