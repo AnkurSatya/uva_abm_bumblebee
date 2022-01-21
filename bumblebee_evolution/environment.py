@@ -1,33 +1,3 @@
-"""Class for the flower patches which contain the food source, nectar."""
-class FlowerPatch(object):
-    def __init__(self, pos, nectar_units):
-        """
-        Args:
-            pos (tuple(int, int)): position of the flower patch in the environment.
-            nectar_units (float): nectar in the flower patch at the beginning of model run.
-        """
-        self.pos = pos
-        self.max_nectar_units = nectar_units
-        self.nectar_units = nectar_units
-        self.replenishing_quantity = 0.1 # for every time step.
-
-    def withdraw_nectar(self, nectar_drawn):
-        """
-        Reduces the nectar quantity by the withdrawn amount.
-
-        Args:
-            nectar_drawn (float): nectar withdrawn by a bee.
-        """
-        self.nectar_units = max(0, self.nectar_units-nectar_drawn)
-
-    def step(self):
-        """
-        Actions to be taken for a flower patch at every time step. 
-        1. replenish the flower patch with nectar.
-        """
-        self.nectar_units = min(self.max_nectar_units, self.nectar_units + self.replenishing_quantity)
-
-
 """Class for the hives"""
 class Hive(object):
     def __init__(self, id, pos, nectar_units, bees):
@@ -97,9 +67,14 @@ class Hive(object):
 
         return fertilized_count
 
-    def step(self):
+    def remove_bee(self, bee):
         """
-        Actions to be taken for a hive after a fixed number of steps(representing a day).
-        1. Distributing the nectar among the bees.
+        Removes the bee from the hive.
+
+        Args:
+            bee (Bee): bee to be removed from the hive.
+        
         """
-        pass
+        if bee not in self.bees:
+            raise ValueError("Bee does not belong to this hive.")
+        self.bees.remove(bee)
