@@ -174,8 +174,8 @@ class BeeEvolutionModel(Model):
         Move all bee agents (drones excluded) back to their hives.
         """
         for agent in list(self.agents):
-            if isinstance(agent, Worker) or isinstance(agent, Queen):
-                self.grid.place_agent(agent, agent.hive.pos)
+            #if isinstance(agent, Worker) or isinstance(agent, Queen):
+            self.grid.place_agent(agent, agent.hive.pos)
 
     def feed_all_agents(self):
         # shuffling the agents before feeding
