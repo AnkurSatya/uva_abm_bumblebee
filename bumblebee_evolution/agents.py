@@ -1,7 +1,6 @@
 from environment import *
 from mesa import Agent
 import numpy as np
-import random
 
 class Bee(Agent):
 	def __init__(self, unique_id, model, pos, hive, nectar_needed):
@@ -50,7 +49,7 @@ class Bee(Agent):
 			neighbouring_cells.remove(self.hive.pos)
 
 		# selecting new positiom
-		new_pos = random.choice(self.model.grid.get_neighborhood(self.pos, moore=True))
+		new_pos = self.model.rng.choice(self.model.grid.get_neighborhood(self.pos, moore=True))
 
 		# moving the agent to the new position
 		self.model.grid.move_agent(self, new_pos)
@@ -249,7 +248,7 @@ class Queen(Bee):
 			drones = [item for item in cur_cell_contents if isinstance(item, Drone) and item.hive != self.hive]
 			if len(drones):
 				# next timestep will be spent mating
-				self.mate(random.choice(drones))
+				self.mate(self.model.rng.choice(drones))
 				return
 
 		# did not mate, and we have just executed a random move, or have reached last_resource and need more nectar

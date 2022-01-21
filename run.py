@@ -16,8 +16,10 @@ nectar_units = 10
 initial_bees_per_hive = 10
 daily_steps = 10
 
+rng = np.random.default_rng(0)
+
 # Initialisation of the model 
-model = BeeEvolutionModel(width, height, num_hives, nectar_units, initial_bees_per_hive, daily_steps)
+model = BeeEvolutionModel(width, height, num_hives, nectar_units, initial_bees_per_hive, daily_steps, rng)
 
 # running N days
 for i in range(N_days):

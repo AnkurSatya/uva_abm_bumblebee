@@ -4,11 +4,10 @@ from mesa.space import MultiGrid
 from environment import *
 from agents import *
 import numpy as np
-import random
 
 
 class BeeEvolutionModel(Model):
-    def __init__(self, width, height, num_hives, nectar_units, initial_bees_per_hive, daily_steps):
+    def __init__(self, width, height, num_hives, nectar_units, initial_bees_per_hive, daily_steps, rng):
         """
         Args:
             width (int): width of the grid.
@@ -16,10 +15,12 @@ class BeeEvolutionModel(Model):
             num_hives (int): number of hives to be placed in the environment.
             initial_bees_per_hive (int): number of bees to be associated with a hive.
             daily_steps (int): number of steps to be run to simulate a day.
+            rng: a numpy random number generator
         """
         self.height = height
         self.width = width
         self.grid = MultiGrid(width, height, torus=False) #Torus should be false wrapping up the space does not make sense here.
+        self.rng = rng
         
         self.num_hives = num_hives
         self.nectar_units = nectar_units
@@ -44,7 +45,7 @@ class BeeEvolutionModel(Model):
         """
         type_ratio = {}
         
-        ratios = [self.random.uniform(0, 1) for _ in range(3)]
+        ratios = [self.rng.uniform(0, 1) for _ in range(3)]
         ratios = [ratio/sum(ratios) for ratio in ratios]
 
         for i, bee_type in enumerate([Drone, Worker, Queen]):
@@ -57,7 +58,8 @@ class BeeEvolutionModel(Model):
         Creates all hives and bees. Then sets them up in the environment.
         """
         for i in range(self.num_hives):
-            pos = (self.random.randrange(self.width), self.random.randrange(self.height))
+            pos = (self.rng.integers(low=0, high=self.width), 
+                   self.rng.integers(low=0, high=self.height))
 
             new_hive = Hive(i+1, pos, 0, [])
             self.hives.append(new_hive)
@@ -91,7 +93,7 @@ class BeeEvolutionModel(Model):
 
         for _ in num_cells_for_flower_patch:
             while(1):
-                pos = (self.random.randrange(self.width), self.random.randrange(self.height))
+                pos = (self.rng.randrange(self.width), self.rng.randrange(self.height))
                 if pos not in hives_pos:
                     break
 
@@ -164,15 +166,15 @@ class BeeEvolutionModel(Model):
         Move all bee agents (drones excluded) back to their hives.
         """
         for agent in list(self.agents):
-            if not isinstance(agent, Drone):
+            if isinstance(agent, Worker) or isinstance(agent, Queen):
                 agent.pos = agent.hive.pos
 
     def feed_all_agents(self):
         # shuffling the agents before feeding
-        self.random.shuffle(self.agents)
+        self.rng.shuffle(self.agents)
 
         for agent in list(self.agents):
-            if not isinstance(agent, Drone):
+            if isinstance(agent, Worker) or isinstance(agent, Queen):
                 difference = agent.nectar_needed - agent.health_level
                 if agent.hive.nectar_units > difference:
                     agent.health_level += difference
@@ -186,13 +188,13 @@ class BeeEvolutionModel(Model):
         this function will kill the starving agents and create the new ones
         '''
         for agent in list(self.agents):
-            if agent.health_level == 0:
+            if isinstance(agent, Bee) and agent.health_level == 0:
                 # storing old properties
                 agent_hive = agent.hive
                 pos = agent.pos
                 # removing old agent and creating new one with old properties
                 self.remove_agent(agent)
-                self.new_agent(np.random.choice([Worker,Drone,Queen], p = [0.34, 0.33, 0.33]), agent_hive, pos)
+                self.new_agent(self.rng.choice([Worker,Drone,Queen], p = [0.34, 0.33, 0.33]), agent_hive, pos)
 
     def mutate_agents(self, alpha, beta, gamma):
         '''
@@ -232,7 +234,7 @@ class BeeEvolutionModel(Model):
                 self.remove_agent(agent)
                 # adding new agent and old properties
                 new_agent = self.new_agent(
-                    np.random.choice(list(agent_probs.keys()), p=list(agent_probs.values())), 
+                    self.rng.choice(list(agent_probs.keys()), p=list(agent_probs.values())), 
                     agent_hive, pos)
                 new_agent.last_resource = last_resource
 
