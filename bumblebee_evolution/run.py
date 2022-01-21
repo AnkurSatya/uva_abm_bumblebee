@@ -13,17 +13,11 @@ gamma = 1
 
 num_hives = 2
 initial_bees_per_hive = 50
-
 nectar_units = 10
 
 # Initialisation of the model 
 rng = np.random.default_rng(1)
-model = BeeEvolutionModel(width, height, num_hives, nectar_units, initial_bees_per_hive, daily_steps, rng)
+model = BeeEvolutionModel(width, height, num_hives, nectar_units, initial_bees_per_hive, daily_steps, rng, alpha, beta, gamma, N_days)
 
 # running N days
-for i in range(N_days):
-    model.run_model()
-    model.all_agents_to_hive()
-    model.feed_all_agents()
-    model.mutate_agents(alpha, beta, gamma)
-    model.new_offspring()
+model.run_multiple_days()

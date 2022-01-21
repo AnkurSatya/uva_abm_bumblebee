@@ -6,8 +6,9 @@ from mesa import Model
 from environment import *
 from agents import *
 
+
 class BeeEvolutionModel(Model):
-    def __init__(self, width, height, num_hives, nectar_units, initial_bees_per_hive, daily_steps, rng):
+    def __init__(self, width, height, num_hives, nectar_units, initial_bees_per_hive, daily_steps, rng,alpha, beta, gamma, N_days):
         """
         Args:
             width (int): width of the grid.
@@ -17,6 +18,11 @@ class BeeEvolutionModel(Model):
             daily_steps (int): number of steps to be run to simulate a day.
             rng: a numpy random number generator
         """
+        self.running = True
+        self.N_days = N_days
+        self.alpha = alpha
+        self.beta = beta
+        self.gamma = gamma
         self.height = height
         self.width = width
         self.grid = MultiGrid(width, height, torus=False) #Torus should be false wrapping up the space does not make sense here.
@@ -38,6 +44,7 @@ class BeeEvolutionModel(Model):
         self.setup_hives_and_bees()
         self.get_env_nectar_needed()
         self.setup_flower_patches()
+        # self.schedule = RandomActivation(self)
 
     def get_initial_bee_type_ratio(self):
         """
@@ -117,6 +124,8 @@ class BeeEvolutionModel(Model):
         
         # Place the agent on the grid
         self.grid.place_agent(agent, agent.pos)
+        # if isinstance(agent,Bee):
+        #     self.schedule.add(agent)
         
         # And add the agent to the model so we can track it
         self.agents.append(agent)
@@ -135,7 +144,9 @@ class BeeEvolutionModel(Model):
         
         # Remove agent from grid
         self.grid.remove_agent(agent)
-        
+
+        # if isinstance(agent,Bee):
+        #     self.schedule.remove(agent)
         # Remove agent from model
         self.agents.remove(agent)
         
@@ -145,6 +156,7 @@ class BeeEvolutionModel(Model):
         
         Prevents applying step on new agents by creating a local list.
         '''
+        #self.schedule.step()
         agent_list = list(self.agents)
         self.rng.shuffle(agent_list)
         for agent in agent_list:
@@ -188,12 +200,12 @@ class BeeEvolutionModel(Model):
                 agent.hive.add_bee(new_agent)
                 self.remove_agent(agent)
 
-    def mutate_agents(self, alpha, beta, gamma):
+    def mutate_agents(self):
         '''
         this method will mutate the agents with health level != 0,
         the agents with zero health will be killed and generated again in the new_offspring function
         '''
-        coeffs = {Worker: alpha, Drone: beta, Queen: gamma}
+        coeffs = {Worker: self.alpha, Drone: self.beta, Queen: self.gamma}
         
         for agent in self.agents:
             if isinstance(agent, Bee) and agent.health_level != 0:    
@@ -228,3 +240,13 @@ class BeeEvolutionModel(Model):
                 new_agent.last_resource = agent.last_resource
                 agent.hive.add_bee(new_agent)
                 self.remove_agent(agent)
+
+    def run_multiple_days(self):
+        # running N days
+        for i in range(self.N_days):
+            self.run_model()
+            self.all_agents_to_hive()
+            self.feed_all_agents()
+            self.mutate_agents()
+            self.new_offspring()
+
