@@ -188,13 +188,13 @@ class BeeEvolutionModel(Model):
         this function will kill the starving agents and create the new ones
         '''
         for agent in list(self.agents):
-            if isinstance(agent, Bee) and agent.health_level == 0:
+            if isinstance(agent, Bee) and agent.health_level < agent.nectar_needed:
                 # storing old properties
                 agent_hive = agent.hive
                 pos = agent.pos
                 # removing old agent and creating new one with old properties
                 self.remove_agent(agent)
-                self.new_agent(self.rng.choice([Worker,Drone,Queen], p = [0.34, 0.33, 0.33]), agent_hive, pos)
+                self.new_agent(self.rng.choice([Worker,Drone,Queen]), agent_hive, pos)
 
     def mutate_agents(self, alpha, beta, gamma):
         '''

@@ -1,8 +1,5 @@
-from mesa import Model
-from mesa.space import MultiGrid
-from bumblebee_evolution.environment import *
-from bumblebee_evolution.agents import *
-from bumblebee_evolution.model import *
+from model import BeeEvolutionModel
+import numpy as np
 
 # Initialise the environment
 N_days = 90
@@ -34,4 +31,4 @@ for i in range(N_days):
     model.mutate_agents(alpha,beta,gamma)
     model.new_offspring()
 
- 
+
