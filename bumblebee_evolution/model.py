@@ -193,36 +193,46 @@ class BeeEvolutionModel(Model):
                 # removing old agent and creating new one with old properties
                 self.remove_agent(agent)
                 self.new_agent(np.random.choice([Worker,Drone,Queen], p = [0.34, 0.33, 0.33]), agent_hive, pos)
-                # new_agent.hive = agent_hive
 
     def mutate_agents(self, alpha, beta, gamma):
         '''
         this method will mutate the agents with health level != 0,
-        the agents with health will be killed and generated again in the new_offspring function
+        the agents with zero health will be killed and generated again in the new_offspring function
         '''
+        coeffs = {Worker: alpha, Drone: beta, Queen: gamma}
+        
         for agent in self.agents:
             if agent.health != 0:    
-                # initialise an array with all the agent interactions,
-                # it will be [workersOfMyHive, workersOfAnother, dronesOfMyHive, dronesOfAnother, ....]
-                agent_interactions = []
-                for key in agent.encounters.values():
-                    for set in key.values():
-                        agent_interactions.append(len(set))
-                # finding the probabilities 
-                # TODO: improve this part
-                worker_prob = (alpha * agent_interactions[0] + (1-alpha) * agent_interactions[1])/sum(agent_interactions)
-                drone_prob = (beta * agent_interactions[2] + (1-beta) * agent_interactions[3])/sum(agent_interactions)
-                queen_prob = (gamma * agent_interactions[4] + (1-gamma) * agent_interactions[5])/sum(agent_interactions)
-                prob_sum = queen_prob + drone_prob + worker_prob
-                worker_prob /= prob_sum
-                drone_prob /= prob_sum
-                queen_prob /= prob_sum
+
+                # find the probabilities of choosing each bee type based on
+                # encounters
+                agent_probs = {}
+
+                for bee_type, encounters in agent.encounters.items():
+                    own_hive = len(encounters['own_hive'])
+                    other_hive = len(encounters['other_hive'])
+
+                    # calculating with encounter numbers instead of proportions
+                    # here; probabilities are normalised later, so this approach
+                    # is equivalent
+                    agent_probs[bee_type] = (coeffs[bee_type]*own_hive 
+                                             + (1-coeffs[bee_type])*other_hive)
+
+                # 1. normalise into probabilities by dividing by sum
+                # 2. make probabilities 'inversely' (loosely speaking) proportional
+                #    to the original ones by substracting from 1 and dividing by
+                #    2 to make sure they again add up to 1
+                prob_sum = sum(agent_probs.values())
+                agent_probs = {bee_type: (1-(prob/prob_sum))/2 for bee_type, prob in agent_probs.items()}
+
                 # saving agent attributes
                 last_resource = agent.last_resource
                 agent_hive = agent.hive
                 pos = agent.pos
                 self.remove_agent(agent)
                 # adding new agent and old properties
-                new_agent = self.new_agent(np.random.choice([Worker,Drone,Queen], p = [worker_prob, drone_prob, queen_prob]), agent_hive, pos)
+                new_agent = self.new_agent(
+                    np.random.choice(list(agent_probs.keys()), p=list(agent_probs.values())), 
+                    agent_hive, pos)
                 new_agent.last_resource = last_resource
-                # new_agent.hive = agent_hive
+
