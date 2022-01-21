@@ -1,6 +1,3 @@
-
-##ToDo: remove a dead bee from the hive.
-
 """Class for the hives"""
 class Hive(object):
     def __init__(self, id, pos, nectar_units, bees):
@@ -70,9 +67,14 @@ class Hive(object):
 
         return fertilized_count
 
-    def step(self):
+    def remove_bee(self, bee):
         """
-        Actions to be taken for a hive after a fixed number of steps(representing a day).
-        1. Distributing the nectar among the bees.
+        Removes the bee from the hive.
+
+        Args:
+            bee (Bee): bee to be removed from the hive.
+        
         """
-        pass
+        if bee not in self.bees:
+            raise ValueError("Bee does not belong to this hive.")
+        self.bees.remove(bee)
