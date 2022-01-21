@@ -63,10 +63,8 @@ class BeeEvolutionModel(Model):
             self.hives.append(new_hive)
             hive_associated_bees = []
 
-            tmp = self.initial_bees_per_hive
             for bee_class, ratio in self.initial_bee_type_ratio:
-                num_bees_of_type = min(tmp, ratio*self.initial_bees_per_hive)
-                tmp -= num_bees_of_type
+                num_bees_of_type = round(ratio*self.initial_bees_per_hive)
 
                 for j in range(num_bees_of_type):
                     new_bee = self.new_agent(bee_class, new_hive, pos)
