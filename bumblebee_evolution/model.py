@@ -130,7 +130,7 @@ class BeeEvolutionModel(Model):
 
     def remove_agent(self, agent):
         '''
-        Method that enables us to remove passed agents.
+        Removes the bee agent from the environment.
         '''
         self.n_agents -= 1
 
@@ -160,10 +160,11 @@ class BeeEvolutionModel(Model):
             self.step()
 
     def all_agents_to_hive(self):
-        # move all the agents back to the hive
+        """
+        Move all bee agents (drones included) back to their hives.
+        """
         for agent in list(self.agents):
-            while agent.pos == agent.hive.pos:
-                agent.back_to_hive()
+            agent.pos = agent.hive.pos
 
     def feed_all_agents(self):
         # shuffling the agents before feeding
