@@ -132,7 +132,7 @@ class Worker(Bee):
 
 		elif self.isCollecting == True:
 			self.isCollecting = False
-
+      
 		else: # neither full nor collecting, then the bee should move
 			if self.last_resource:
 				self.move_towards_resource(self.bee_type)
