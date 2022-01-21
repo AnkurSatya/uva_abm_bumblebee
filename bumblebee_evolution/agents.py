@@ -27,7 +27,7 @@ class Bee(Agent):
 			Queen:{"own_hive":set(), "other_hive":set()}
 		}
 
-	def update_encounters(self):
+	def update_encounters(self, bee_type):
 		cell_contents = self.model.grid.get_cell_list_contents([self.pos])
 		for item in cell_contents:
 			if isinstance(item, Bee):
@@ -39,9 +39,9 @@ class Bee(Agent):
 				# adjust self encounters dictionary
 				self.encounters[item.bee_type][hive_category].add(item.unique_id)
 				# adjust other bee's encounters dictionary
-				item.encounters[self.bee_type][hive_category].add(self.unique_id)
+				item.encounters[bee_type][hive_category].add(self.unique_id)
 
-	def random_move(self):
+	def random_move(self, bee_type):
 		'''
 		This method should get the neighbouring cells (Moore's neighbourhood), select one, and move the agent to this cell.
 		'''
@@ -54,7 +54,7 @@ class Bee(Agent):
 
 		# moving the agent to the new position
 		self.model.grid.move_agent(self, new_pos)
-		self.update_encounters()
+		self.update_encounters(bee_type)
 
 	def check_cell_for_nectar(self, threshold=10): # TODO : update threshold value?
 		'''
@@ -77,16 +77,16 @@ class Bee(Agent):
 		flower_patch.withdraw_nectar(amount_to_withdraw)
 		self.isCollecting = True
 
-	def move_towards_hive(self):
+	def move_towards_hive(self, bee_type):
 		difference = np.array(self.pos) - np.array(self.hive.pos)
 		self.model.grid.move_agent(self, (np.sign(difference[0]), np.sign(difference[1])))
 		if self.pos != self.hive.pos: # TODO : shouldn't count the hive members, right?
-			self.update_encounters()
+			self.update_encounters(bee_type)
 
-	def move_towards_resource(self):
+	def move_towards_resource(self, bee_type):
 		difference = np.array(self.pos) - np.array(self.last_resource)
 		self.model.grid.move_agent(self, (np.sign(difference[0]), np.sign(difference[1])))
-		self.update_encounters()
+		self.update_encounters(bee_type)
 
 
 class Worker(Bee):
@@ -128,17 +128,17 @@ class Worker(Bee):
 			if self.pos == self.hive.pos:
 				self.drop_nectar()
 			else:
-				self.move_towards_hive()
+				self.move_towards_hive(self.bee_type)
 
 		elif self.isCollecting == True:
 			self.isCollecting = False
 
 		else: # neither full nor collecting, then the bee should move
 			if self.last_resource:
-				self.move_towards_resource()
+				self.move_towards_resource(self.bee_type)
 			else: 
 				# move the bee
-				self.random_move()
+				self.random_move(self.bee_type)
 
 			# we have just executed a random move, or have reached last_resource
 			if not self.last_resource or self.pos == self.last_resource:
@@ -177,7 +177,7 @@ class Drone(Bee):
 			return
 
 		# take a random step
-		self.random_move()
+		self.random_move(self.bee_type)
 
 		# if the bee is hungry and there is nectar in the current cell, consume
 		if self.health_level < self.nectar_needed:
@@ -232,14 +232,14 @@ class Queen(Bee):
 			# store last_resource if nectar is available before returning to hive
 			if self.check_cell_for_nectar():
 				self.last_resource = self.pos
-			self.move_towards_hive()
+			self.move_towards_hive(self.bee_type)
 		else:
 			# move towards last_resource if available
 			if self.last_resource:
-				self.move_towards_resource()
+				self.move_towards_resource(self.bee_type)
 			# otherwise random walk
 			else:
-				self.random_move()
+				self.random_move(self.bee_type)
 
 		# gather cell contents after moving
 		cur_cell_contents = self.model.grid.get_cell_list_contents([self.pos])
@@ -261,3 +261,50 @@ class Queen(Bee):
 					self.collect(flower_patch)
 				else:
 					self.last_resource = None
+
+
+"""Class for the flower patches which contain the food source, nectar."""
+class FlowerPatch(Agent):
+	def __init__(self, unique_id, model, pos, nectar_units):
+		"""
+		Args:
+			unique_id: a unique id for the flower patch.
+			model: the model object.
+			pos (tuple(int, int)): position of the flower patch in the environment.
+			nectar_units (float): nectar in the flower patch at the beginning of model run.
+		"""
+		super().__init__(unique_id, model)
+		self.pos = pos
+		self.max_nectar_units = nectar_units
+		self.nectar_units = nectar_units
+
+		#represents how many times the 'pos' of this flower patch was sampled during the setting up of the environment.
+		self.flower_patch_size = 1
+
+		self.base_replenishing_quantity = 0.1
+
+		# This should be proportional to the initial nectar quantity of the flower patch because 
+		# different flower patch may have different initial quantity due to the way the flower 
+		# patches are set up. So, a flower patch having a greater initial nectar units represent
+		# a bigger plant. Hence, the replenishing quantity per time step should be greater.
+		self.replenishing_quantity = self.base_replenishing_quantity
+
+	def update_flower_patch(self, more_nectar):
+		self.nectar_units += more_nectar
+		self.max_nectar_units = self.nectar_units
+		self.replenishing_quantity = self.base_replenishing_quantity * self.flower_patch_size
+
+	def withdraw_nectar(self, nectar_drawn):
+		"""
+		Reduces the nectar quantity by the withdrawn amount.
+		Args:
+			nectar_drawn (float): nectar withdrawn by a bee.
+		"""
+		self.nectar_units = max(0, self.nectar_units-nectar_drawn)
+
+	def step(self):
+		"""
+		Actions to be taken for a flower patch at every time step. 
+		1. replenish the flower patch with nectar.
+		"""
+		self.nectar_units = min(self.max_nectar_units, self.nectar_units + self.replenishing_quantity)
