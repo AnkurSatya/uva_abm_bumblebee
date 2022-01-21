@@ -161,10 +161,11 @@ class BeeEvolutionModel(Model):
 
     def all_agents_to_hive(self):
         """
-        Move all bee agents (drones included) back to their hives.
+        Move all bee agents (drones excluded) back to their hives.
         """
         for agent in list(self.agents):
-            agent.pos = agent.hive.pos
+            if not isinstance(agent, Drone):
+                agent.pos = agent.hive.pos
 
     def feed_all_agents(self):
         # shuffling the agents before feeding
