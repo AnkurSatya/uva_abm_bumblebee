@@ -26,8 +26,10 @@ class Bee(Agent):
 			Queen:{"own_hive":set(), "other_hive":set()}
 		}
 
-	def update_encounters(self, bee_type):
-		cell_contents = self.model.grid.get_cell_list_contents([self.pos])
+	def update_encounters(self):
+		# self.pos contains int64 objects which mesa doesn't like, so we need to cast to int *sigh*
+		cell_contents = self.model.grid.get_cell_list_contents((int(self.pos[0]), int(self.pos[1])))
+		cell_contents.remove(self)
 		for item in cell_contents:
 			if isinstance(item, Bee):
 				# check if bees originate from same hive
@@ -38,9 +40,9 @@ class Bee(Agent):
 				# adjust self encounters dictionary
 				self.encounters[item.bee_type][hive_category].add(item.unique_id)
 				# adjust other bee's encounters dictionary
-				item.encounters[bee_type][hive_category].add(self.unique_id)
+				item.encounters[self.bee_type][hive_category].add(self.unique_id)
 
-	def random_move(self, bee_type):
+	def random_move(self):
 		'''
 		This method should get the neighbouring cells (Moore's neighbourhood), select one, and move the agent to this cell.
 		'''
@@ -52,15 +54,15 @@ class Bee(Agent):
 		new_pos = self.model.rng.choice(self.model.grid.get_neighborhood(self.pos, moore=True))
 
 		# moving the agent to the new position
-		self.model.grid.move_agent(self, new_pos)
-		self.update_encounters(bee_type)
+		self.model.grid.move_agent(self, tuple(new_pos))
+		self.update_encounters()
 
 	def check_cell_for_nectar(self, threshold=10): # TODO : update threshold value?
 		'''
 		This method should check if the cell is good enough to start collecting food.
 		'''
 		# content of the cell in the current position
-		cell_concents = self.model.grid.get_cell_list_contents([self.pos])
+		cell_concents = self.model.grid.get_cell_list_contents((int(self.pos[0]), int(self.pos[1])))
 		flower_patch = [obj for obj in cell_concents if isinstance(obj, FlowerPatch)]
 		if flower_patch and flower_patch[0].nectar_units > threshold:
 			return flower_patch[0]
@@ -76,26 +78,26 @@ class Bee(Agent):
 		flower_patch.withdraw_nectar(amount_to_withdraw)
 		self.isCollecting = True
 
-	def move_towards_hive(self, bee_type):
-		difference = np.array(self.pos) - np.array(self.hive.pos)
-		self.model.grid.move_agent(self, (np.sign(difference[0]), np.sign(difference[1])))
+	def move_towards_hive(self):
+		difference =  np.array(self.hive.pos) - np.array(self.pos)
+		self.model.grid.move_agent(self, (self.pos[0]+np.sign(difference[0]), self.pos[1]+np.sign(difference[1])))
 		if self.pos != self.hive.pos: # TODO : shouldn't count the hive members, right?
-			self.update_encounters(bee_type)
+			self.update_encounters()
 
-	def move_towards_resource(self, bee_type):
-		difference = np.array(self.pos) - np.array(self.last_resource)
-		self.model.grid.move_agent(self, (np.sign(difference[0]), np.sign(difference[1])))
-		self.update_encounters(bee_type)
+	def move_towards_resource(self):
+		difference =  np.array(self.last_resource) - np.array(self.pos)
+		self.model.grid.move_agent(self, (self.pos[0] + np.sign(difference[0]), self.pos[1] + np.sign(difference[1])))
+		self.update_encounters()
 
 
 class Worker(Bee):
-	def __init__(self, unique_id, model, hive, pos, nectar_needed=236):
+	def __init__(self, unique_id, model, pos, hive, nectar_needed=236):
 		"""
         Args:
             unique_id (int): unique id for the bee.
             model (BeeEvolutionModel): the model being used for the simulations.
-			hive (Hive): the original hive of the bee
             pos (tuple(int, int)): The position of the bee in the environment.
+			hive (Hive): the original hive of the bee
 			nectar_needed (int): amount of nectar needed per day
         """
 		super().__init__(unique_id, model, pos, hive, nectar_needed)
@@ -127,17 +129,17 @@ class Worker(Bee):
 			if self.pos == self.hive.pos:
 				self.drop_nectar()
 			else:
-				self.move_towards_hive(self.bee_type)
+				self.move_towards_hive()
 
 		elif self.isCollecting == True:
 			self.isCollecting = False
       
 		else: # neither full nor collecting, then the bee should move
 			if self.last_resource:
-				self.move_towards_resource(self.bee_type)
+				self.move_towards_resource()
 			else: 
 				# move the bee
-				self.random_move(self.bee_type)
+				self.random_move()
 
 			# we have just executed a random move, or have reached last_resource
 			if not self.last_resource or self.pos == self.last_resource:
@@ -150,13 +152,13 @@ class Worker(Bee):
 
 
 class Drone(Bee):
-	def __init__(self, unique_id, model, hive, pos, nectar_needed=236):
+	def __init__(self, unique_id, model, pos, hive, nectar_needed=236):
 		"""
         Args:
             unique_id (int): unique id for the bee.
             model (BeeEvolutionModel): the model being used for the simulations.
-			hive (Hive): the original hive of the bee.
             pos (tuple(int, int)): The position of the bee in the environment.
+			hive (Hive): the original hive of the bee.
 			nectar_needed (int): amount of nectar needed per day.
         """
 		super().__init__(unique_id, model, pos, hive, nectar_needed)
@@ -176,7 +178,7 @@ class Drone(Bee):
 			return
 
 		# take a random step
-		self.random_move(self.bee_type)
+		self.random_move()
 
 		# if the bee is hungry and there is nectar in the current cell, consume
 		if self.health_level < self.nectar_needed:
@@ -186,13 +188,13 @@ class Drone(Bee):
 
 
 class Queen(Bee):
-	def __init__(self, unique_id, model, hive, pos, nectar_needed=740, fertilized=False, isMating=False):
+	def __init__(self, unique_id, model, pos, hive, nectar_needed=740, fertilized=False, isMating=False):
 		"""
 		Args:
 			unique_id (int): unique id for the bee.
 			model (BeeEvolutionModel): the model being used for the simulations.
-			hive (Hive): the original hive of the bee.
 			pos (tuple(int, int)): The position of the bee in the environment.
+			hive (Hive): the original hive of the bee.
 			nectar_needed (int): amount of nectar needed per day.
 			fertilized (bool): whether queen has been fertilized or not.
 			isMating (bool): indicates whether queen is currently mating.
@@ -206,7 +208,8 @@ class Queen(Bee):
 
 	def mate(self, drone):
 		self.fertilized = True
-		self.model.grid.remove_agent(drone)
+		print("reproduction!")
+		self.model.remove_agent(drone)
 
 	def step(self):
 		'''
@@ -231,17 +234,17 @@ class Queen(Bee):
 			# store last_resource if nectar is available before returning to hive
 			if self.check_cell_for_nectar():
 				self.last_resource = self.pos
-			self.move_towards_hive(self.bee_type)
+			self.move_towards_hive()
 		else:
 			# move towards last_resource if available
 			if self.last_resource:
-				self.move_towards_resource(self.bee_type)
+				self.move_towards_resource()
 			# otherwise random walk
 			else:
-				self.random_move(self.bee_type)
+				self.random_move()
 
 		# gather cell contents after moving
-		cur_cell_contents = self.model.grid.get_cell_list_contents([self.pos])
+		cur_cell_contents = self.model.grid.get_cell_list_contents((int(self.pos[0]), int(self.pos[1])))
 
 		# prioritize possibility of mating with drone from different hive
 		if not self.fertilized:

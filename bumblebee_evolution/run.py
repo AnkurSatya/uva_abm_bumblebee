@@ -1,34 +1,29 @@
 from model import BeeEvolutionModel
 import numpy as np
 
-# Initialise the environment
-N_days = 90
+N_days = 20
+daily_steps = 20
+
+width = 50
+height = 50
+
 alpha = 1
 beta = 1
 gamma = 1
-width = 10
-height = 10
-num_hives = 10
-nectar_units = 10
-initial_bees_per_hive = 10
-daily_steps = 10
 
-rng = np.random.default_rng(0)
+num_hives = 2
+initial_bees_per_hive = 50
+
+nectar_units = 10
 
 # Initialisation of the model 
+rng = np.random.default_rng(1)
 model = BeeEvolutionModel(width, height, num_hives, nectar_units, initial_bees_per_hive, daily_steps, rng)
 
 # running N days
 for i in range(N_days):
-   
-    '''
-    when the day is over
-    '''
-  
     model.run_model()
     model.all_agents_to_hive()
     model.feed_all_agents()
-    model.mutate_agents(alpha,beta,gamma)
+    model.mutate_agents(alpha, beta, gamma)
     model.new_offspring()
-
-

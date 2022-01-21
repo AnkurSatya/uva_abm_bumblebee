@@ -1,10 +1,10 @@
 ## Class for the Bee evolution model.
-from mesa import Model
 from mesa.space import MultiGrid
+from collections import Counter
+from itertools import product
+from mesa import Model
 from environment import *
 from agents import *
-import numpy as np
-
 
 class BeeEvolutionModel(Model):
     def __init__(self, width, height, num_hives, nectar_units, initial_bees_per_hive, daily_steps, rng):
@@ -44,13 +44,10 @@ class BeeEvolutionModel(Model):
         Evaluates the initial proportion of bee types for all the hives.
         """
         type_ratio = {}
-        
-        ratios = [self.rng.uniform(0, 1) for _ in range(3)]
-        ratios = [ratio/sum(ratios) for ratio in ratios]
-
+        ratios = self.rng.uniform(0, 1, size=3)
+        ratios /= sum(ratios)
         for i, bee_type in enumerate([Drone, Worker, Queen]):
             type_ratio[bee_type] = ratios[i]
-
         return type_ratio
 
     def setup_hives_and_bees(self):
@@ -58,22 +55,19 @@ class BeeEvolutionModel(Model):
         Creates all hives and bees. Then sets them up in the environment.
         """
         for i in range(self.num_hives):
+            # create new hive
             pos = (self.rng.integers(low=0, high=self.width), 
                    self.rng.integers(low=0, high=self.height))
-
-            new_hive = Hive(i+1, pos, 0, [])
+            new_hive = Hive(i+1, pos, 0)
             self.hives.append(new_hive)
-            hive_associated_bees = []
-
-            for bee_class, ratio in self.initial_bee_type_ratio:
-                num_bees_of_type = round(ratio*self.initial_bees_per_hive)
-
-                for j in range(num_bees_of_type):
-                    new_bee = self.new_agent(bee_class, new_hive, pos)
-                    hive_associated_bees.append(new_bee)
-
-            new_hive.bees = hive_associated_bees
             
+            # add bees to new hive
+            for bee_class, ratio in self.initial_bee_type_ratio.items():
+                num_bees_of_type = max(1, int(ratio*self.initial_bees_per_hive))
+                for _ in range(num_bees_of_type):
+                    new_bee = self.create_new_agent(bee_class, pos, new_hive)
+                    new_hive.add_bee(new_bee)
+
 
     def get_env_nectar_needed(self):
         """
@@ -87,22 +81,21 @@ class BeeEvolutionModel(Model):
         """
         Creates all the flower patches in the environment.
         """
+        # construct set of cells not occupied by hives 
         hives_pos = {hive.pos for hive in self.hives}
-        num_cells_for_flower_patch = self.height*self.width - len(hives_pos)
-        nectar_for_one_patch = self.nectar_units/num_cells_for_flower_patch
+        possible_flower_patch_locations = list(set(product(range(self.height), range(self.width))) - hives_pos)
 
-        for _ in num_cells_for_flower_patch:
-            while(1):
-                pos = (self.rng.randrange(self.width), self.rng.randrange(self.height))
-                if pos not in hives_pos:
-                    break
+        # number of desired flower patches
+        num_flower_patches = self.height*self.width - len(hives_pos)
+        nectar_for_one_patch = self.nectar_units/num_flower_patches
 
-            cell_concents = self.grid.get_cell_list_contents([pos])
-            flower_patch = [obj for obj in cell_concents if isinstance(obj, FlowerPatch)]
-            if flower_patch:
-                flower_patch[0].update_flower_patch(nectar_for_one_patch)
-            else:
-                self.new_agent(FlowerPatch, pos, nectar_for_one_patch)
+        # dictionary of flower patches and nectar quantities
+        patch_choices = [tuple(x) for x in self.rng.choice(possible_flower_patch_locations, size=num_flower_patches, replace=True)]
+        flower_patches = Counter(patch_choices)
+
+        # create FlowerPatch agents
+        for pos, count in flower_patches.items():
+            self.create_new_agent(FlowerPatch, pos, nectar_for_one_patch*count)
 
     # This function is incorrect because of two reasons:
     # 1. If we want to create a new bee type agent, we need to pass more agruments to this function as needed by
@@ -112,7 +105,7 @@ class BeeEvolutionModel(Model):
 
     # ToDo: Fix this function and wherever it is being referred to.
     # STATUS: Fixed now.
-    def new_agent(self, *argv):
+    def create_new_agent(self, *argv):
         '''
         Method that enables us to add agents of a given type.
         '''
@@ -120,24 +113,25 @@ class BeeEvolutionModel(Model):
         
         # Create a new agent of the given type
         agent_type = argv[0]
-        new_agent = agent_type(self.n_agents, self, *argv[1:])
+        agent = agent_type(self.n_agents, self, *argv[1:])
         
         # Place the agent on the grid
-        self.grid.place_agent(new_agent, new_agent.pos)
+        self.grid.place_agent(agent, agent.pos)
         
         # And add the agent to the model so we can track it
-        self.agents.append(new_agent)
+        self.agents.append(agent)
 
-        return new_agent
+        return agent
 
     def remove_agent(self, agent):
         '''
-        Removes the bee agent from the environment.
+        Removes an agent from the environment.
         '''
         self.n_agents -= 1
 
-        # Remove agent from the associated hive.
-        agent.hive.remove_bee(agent)
+        # Remove agent from the hive if agent is a bee
+        if isinstance(agent, Bee):
+            agent.hive.remove_bee(agent)
         
         # Remove agent from grid
         self.grid.remove_agent(agent)
@@ -151,7 +145,9 @@ class BeeEvolutionModel(Model):
         
         Prevents applying step on new agents by creating a local list.
         '''
-        for agent in list(self.agents):
+        agent_list = list(self.agents)
+        self.rng.shuffle(agent_list)
+        for agent in agent_list:
             agent.step()
 
     def run_model(self):
@@ -167,34 +163,30 @@ class BeeEvolutionModel(Model):
         """
         for agent in list(self.agents):
             if isinstance(agent, Worker) or isinstance(agent, Queen):
-                agent.pos = agent.hive.pos
+                self.grid.place_agent(agent, agent.hive.pos)
 
     def feed_all_agents(self):
         # shuffling the agents before feeding
-        self.rng.shuffle(self.agents)
-
-        for agent in list(self.agents):
-            if isinstance(agent, Worker) or isinstance(agent, Queen):
-                difference = agent.nectar_needed - agent.health_level
-                if agent.hive.nectar_units > difference:
-                    agent.health_level += difference
-                    agent.hive.nectar_units -= difference
-                else:
-                    agent.health_level += agent.hive.nectar_units
-                    agent.hive.nectar_units = 0
-                
+        for hive in self.hives:
+            # get non-drone bees for the hive
+            bees = [b for b in hive.bees if not isinstance(b, Drone)]
+            self.rng.shuffle(bees)
+            for b in bees:
+                difference = b.nectar_needed - b.health_level
+                if hive.nectar_units > difference:
+                    b.health_level = b.nectar_needed
+                    hive.nectar_units -= difference
+        
     def new_offspring(self):
         '''
         this function will kill the starving agents and create the new ones
         '''
         for agent in list(self.agents):
             if isinstance(agent, Bee) and agent.health_level < agent.nectar_needed:
-                # storing old properties
-                agent_hive = agent.hive
-                pos = agent.pos
-                # removing old agent and creating new one with old properties
+                # create new agent and remove old one
+                new_agent = self.create_new_agent(self.rng.choice([Worker,Drone,Queen]), agent.pos, agent.hive)
+                agent.hive.add_bee(new_agent)
                 self.remove_agent(agent)
-                self.new_agent(self.rng.choice([Worker,Drone,Queen]), agent_hive, pos)
 
     def mutate_agents(self, alpha, beta, gamma):
         '''
@@ -204,12 +196,10 @@ class BeeEvolutionModel(Model):
         coeffs = {Worker: alpha, Drone: beta, Queen: gamma}
         
         for agent in self.agents:
-            if agent.health != 0:    
+            if isinstance(agent, Bee) and agent.health_level != 0:    
 
-                # find the probabilities of choosing each bee type based on
-                # encounters
+                # find the probabilities of choosing each bee type based onencounters
                 agent_probs = {}
-
                 for bee_type, encounters in agent.encounters.items():
                     own_hive = len(encounters['own_hive'])
                     other_hive = len(encounters['other_hive'])
@@ -225,16 +215,16 @@ class BeeEvolutionModel(Model):
                 #    to the original ones by substracting from 1 and dividing by
                 #    2 to make sure they again add up to 1
                 prob_sum = sum(agent_probs.values())
+                # there were no encounters, so avoid mutating
+                if prob_sum == 0:
+                    return
+
                 agent_probs = {bee_type: (1-(prob/prob_sum))/2 for bee_type, prob in agent_probs.items()}
 
-                # saving agent attributes
-                last_resource = agent.last_resource
-                agent_hive = agent.hive
-                pos = agent.pos
+                # add new agent and remove old one
+                new_agent = self.create_new_agent(
+                    self.rng.choice(list(agent_probs.keys()),
+                    p=list(agent_probs.values())), agent.pos, agent.hive)
+                new_agent.last_resource = agent.last_resource
+                agent.hive.add_bee(new_agent)
                 self.remove_agent(agent)
-                # adding new agent and old properties
-                new_agent = self.new_agent(
-                    self.rng.choice(list(agent_probs.keys()), p=list(agent_probs.values())), 
-                    agent_hive, pos)
-                new_agent.last_resource = last_resource
-
