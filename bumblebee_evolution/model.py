@@ -209,7 +209,7 @@ class BeeEvolutionModel(Model):
         
         for agent in self.agents:
             # entering in the mutation process only if the bee has been feed.
-            if isinstance(agent, Bee) and agent.health_level != agent.nectar_needed:    
+            if isinstance(agent, Bee) and agent.health_level == agent.nectar_needed:    
 
                 # find the probabilities of choosing each bee type based onencounters
                 agent_probs = {}
