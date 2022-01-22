@@ -8,7 +8,7 @@ from agents import *
 
 
 class BeeEvolutionModel(Model):
-    def __init__(self, width, height, num_hives, nectar_units, initial_bees_per_hive, daily_steps, rng,alpha, beta, gamma, N_days):
+    def __init__(self, width, height, num_hives, nectar_units, initial_bees_per_hive, daily_steps, rng, alpha, beta, gamma, N_days):
         """
         Args:
             width (int): width of the grid.
@@ -27,6 +27,7 @@ class BeeEvolutionModel(Model):
         self.width = width
         self.grid = MultiGrid(width, height, torus=False) #Torus should be false wrapping up the space does not make sense here.
         self.rng = rng
+        self.grid_locations = set(product(range(self.height), range(self.width)))
         
         self.num_hives = num_hives
         self.nectar_units = nectar_units
@@ -61,13 +62,11 @@ class BeeEvolutionModel(Model):
         """
         Creates all hives and bees. Then sets them up in the environment.
         """
-        for i in range(self.num_hives):
-            # create new hive
-            pos = (self.rng.integers(low=0, high=self.width), 
-                   self.rng.integers(low=0, high=self.height))
+        hive_positions = [tuple(item) for item in self.rng.choice(list(self.grid_locations), size=self.num_hives, replace=False)]
+        for i, pos in enumerate(hive_positions):
             new_hive = Hive(i+1, pos, 0)
             self.hives.append(new_hive)
-            
+
             # add bees to new hive
             for bee_class, ratio in self.initial_bee_type_ratio.items():
                 num_bees_of_type = max(1, int(ratio*self.initial_bees_per_hive))
@@ -90,7 +89,7 @@ class BeeEvolutionModel(Model):
         """
         # construct set of cells not occupied by hives 
         hives_pos = {hive.pos for hive in self.hives}
-        possible_flower_patch_locations = list(set(product(range(self.height), range(self.width))) - hives_pos)
+        possible_flower_patch_locations = list(self.grid_locations - hives_pos)
 
         # number of desired flower patches
         num_flower_patches = self.height*self.width - len(hives_pos)
