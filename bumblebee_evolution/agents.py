@@ -17,7 +17,7 @@ class Bee(Agent):
 		self.hive = hive
 		self.pos = pos
 		self.nectar_needed = nectar_needed
-		self.health_level = nectar_needed # health is full upon initialization
+		self.health_level = 0 # health is empty upon initialization
 		self.isCollecting = False
 		self.last_resource = None
 		self.encounters = {

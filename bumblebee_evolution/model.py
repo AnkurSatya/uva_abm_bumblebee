@@ -63,14 +63,12 @@ class BeeEvolutionModel(Model):
         for i, pos in enumerate(hive_positions):
             new_hive = Hive(i+1, pos, 0)
             self.hives.append(new_hive)
-
             # add bees to new hive
             for bee_class, ratio in self.initial_bee_type_ratio.items():
                 num_bees_of_type = max(1, int(ratio*self.initial_bees_per_hive))
                 for _ in range(num_bees_of_type):
                     new_bee = self.create_new_agent(bee_class, pos, new_hive)
                     new_hive.add_bee(new_bee)
-
 
     def get_env_nectar_needed(self):
         """
@@ -184,7 +182,7 @@ class BeeEvolutionModel(Model):
                 if hive.nectar_units > difference:
                     b.health_level = b.nectar_needed
                     hive.nectar_units -= difference
-        
+
     def new_offspring(self):
         '''
         this function will kill the starving agents and create the new ones
@@ -202,7 +200,7 @@ class BeeEvolutionModel(Model):
         the agents with health != nectar_needed will be killed and generated again in the new_offspring function
         '''
         coeffs = {Worker: self.alpha, Drone: self.beta, Queen: self.gamma}
-        
+
         for agent in self.agents:
             # entering in the mutation process only if the bee has been feed.
             if isinstance(agent, Bee) and agent.health_level == agent.nectar_needed:    
@@ -238,6 +236,11 @@ class BeeEvolutionModel(Model):
                 agent.hive.add_bee(new_agent)
                 self.remove_agent(agent)
 
+    def reset_health_levels(self):
+        for agent in self.agents:
+            if isinstance(agent, Bee):
+                agent.health_level = 0
+
     def run_multiple_days(self):
         # running N days
         for i in range(self.N_days):
@@ -246,4 +249,4 @@ class BeeEvolutionModel(Model):
             self.feed_all_agents()
             self.mutate_agents()
             self.new_offspring()
-
+            self.reset_health_levels()
