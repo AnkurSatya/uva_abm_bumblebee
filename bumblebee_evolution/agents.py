@@ -46,7 +46,10 @@ class Bee(Agent):
 		'''
 		This method should get the neighbouring cells (Moore's neighbourhood), select one, and move the agent to this cell.
 		'''
-		neighbouring_cells = self.model.grid.get_neighborhood(self.pos, moore=True)
+		try:
+			neighbouring_cells = self.model.grid.get_neighborhood(self.pos, moore=True)
+		except:
+			import IPython; IPython.embed()
 		if self.hive.pos in neighbouring_cells:
 			neighbouring_cells.remove(self.hive.pos)
 
@@ -208,8 +211,11 @@ class Queen(Bee):
 
 	def mate(self, drone):
 		self.fertilized = True
-		print("reproduction!")
-		self.model.remove_agent(drone)
+		# respawn "new" drone at the hive with full health, no memory
+		drone.health_level = drone.nectar_needed
+		drone.last_resource = None
+		drone.isCollectinve = False
+		self.model.grid.place_agent(drone, drone.hive.pos)
 
 	def step(self):
 		'''
