@@ -25,7 +25,7 @@ class BeeEvolutionModel(Model):
         self.gamma = gamma
         self.height = height
         self.width = width
-        self.grid = MultiGrid(width, height, torus=False) #Torus should be false wrapping up the space does not make sense here.
+        self.grid = MultiGrid(width, height, torus=False) # Torus should be false wrapping up the space does not make sense here.
         self.rng = rng
         self.grid_locations = set(product(range(self.height), range(self.width)))
         
@@ -51,12 +51,9 @@ class BeeEvolutionModel(Model):
         """
         Evaluates the initial proportion of bee types for all the hives.
         """
-        type_ratio = {}
         ratios = self.rng.uniform(0, 1, size=3)
         ratios /= sum(ratios)
-        for i, bee_type in enumerate([Drone, Worker, Queen]):
-            type_ratio[bee_type] = ratios[i]
-        return type_ratio
+        return {Drone:ratios[0], Worker:ratios[1], Queen:ratios[2]}
 
     def setup_hives_and_bees(self):
         """

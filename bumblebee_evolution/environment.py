@@ -29,16 +29,17 @@ class Hive(object):
         """
         self.bees.discard(bee)
 
-    def get_num_bees_present(self):
-        """
-        Returns:
-            int: number of bees present in the hive
-        """
-        bees_present = 0
-        for bee in self.bees:
-            if bee.pos == self.pos:
-                bees_present += 1
-        return bees_present
+    # UNUSED
+    # def get_num_bees_present(self):
+    #     """
+    #     Returns:
+    #         int: number of bees present in the hive
+    #     """
+    #     bees_present = 0
+    #     for bee in self.bees:
+    #         if bee.pos == self.pos:
+    #             bees_present += 1
+    #     return bees_present
 
     def get_bees_of_type(self, bee_type):
         """
