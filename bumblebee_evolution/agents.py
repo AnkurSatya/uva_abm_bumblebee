@@ -397,10 +397,11 @@ class Hive(Agent):
 
 	def bees_to_hive(self):
 		for b in self.bees:
-			self.model.grid.move_agent(b, self.pos)
-			b.isCollecting = False
-			b.isMating = False
-			# TODO : possibly have worker bees drop off nectar?
+			if not isinstance(b, Drone):
+				self.model.grid.move_agent(b, self.pos)
+				b.isCollecting = False
+				b.isMating = False
+				# TODO : possibly have worker bees drop off nectar?
 
 	def feed_bees(self):
 		# shuffling the agents before feeding
