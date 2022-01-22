@@ -1,9 +1,11 @@
 ## Class for the Bee evolution model.
+from mesa.datacollection import DataCollector
 from mesa.space import MultiGrid
 from collections import Counter
 from itertools import product
 from mesa import Model
 from agents import *
+    
 
 class BeeEvolutionModel(Model):
     def __init__(self, width, height, num_hives, nectar_units, initial_bees_per_hive, daily_steps, rng, alpha, beta, gamma, N_days):
@@ -43,7 +45,25 @@ class BeeEvolutionModel(Model):
         self.setup_hives_and_bees()
         self.get_env_nectar_needed()
         self.setup_flower_patches()
+ 
         # self.schedule = RandomActivation(self)
+
+        #Will be updated at the end of a day apart from the first time. 
+        self.bee_population_by_hive = {hive.unique_id: hive.get_bees_type_count() for hive in self.hives}
+        self.bee_population_by_hive_previous_day = self.bee_population_by_hive.copy()
+
+        self.step_count = 0
+        self.n_days_passed = 0
+
+        #Data collection
+        self.datacollector = DataCollector(
+            {"percentage change in Worker": lambda m: m.get_change_in_bee_population_in_day('Worker'),
+            "percentage change in Queen": lambda m: m.get_change_in_bee_population_in_day('Queen'),
+            "percentage change in Drone": lambda m: m.get_change_in_bee_population_in_day('Drone'),
+            "percentage queens fertilized": lambda m: m.get_perc_fertilized_queens_season_end()}
+        )
+
+        self.datacollector.collect(self)
 
     def get_initial_bee_type_ratio(self):
         """
@@ -58,18 +78,21 @@ class BeeEvolutionModel(Model):
         Creates all hives and bees. Then sets them up in the environment.
         """
         hive_positions = [tuple(item) for item in self.rng.choice(list(self.grid_locations), size=self.num_hives, replace=False)]
-        for i, pos in enumerate(hive_positions):
+        for _, pos in enumerate(hive_positions):
 
             new_hive = self.create_new_agent(Hive, pos, 0)
             #new_hive = Hive(i+1, pos, 0)
 
             self.hives.append(new_hive)
+
             # add bees to new hive
             for bee_class, ratio in self.initial_bee_type_ratio.items():
                 num_bees_of_type = max(1, int(ratio*self.initial_bees_per_hive))
                 for _ in range(num_bees_of_type):
                     new_bee = self.create_new_agent(bee_class, pos, new_hive)
                     new_hive.add_bee(new_bee)
+            
+            new_hive.bee_population_by_type = new_hive.get_bees_type_count()
 
     def get_env_nectar_needed(self):
         """
@@ -148,6 +171,7 @@ class BeeEvolutionModel(Model):
         Method that steps every agent. 
         Prevents applying step on new agents by creating a local list.
         '''
+        self.step_count += 1
         agent_list = list(self.agents)
         self.rng.shuffle(agent_list)
         for agent in agent_list:
@@ -156,6 +180,11 @@ class BeeEvolutionModel(Model):
         for hive in self.hives:
             hive.step()
 
+        if self.step_count % self.daily_steps == 0:
+            self.n_days_passed += 1
+
+        self.datacollector.collect(self)
+
     def run_model(self):
         '''
         Method that runs the model for a specific amount of steps.
@@ -163,3 +192,24 @@ class BeeEvolutionModel(Model):
         for _ in range(self.N_days):
             for _ in range(self.daily_steps):
                 self.step()
+
+    def get_change_in_bee_population_in_day(self, bee_type):
+        if self.step_count % self.daily_steps == 0:
+            pop_previous_day = sum([values[bee_type] for hive_id, values in self.bee_population_by_hive_previous_day.items()])
+            pop_today = sum([values[bee_type] for hive_id, values in self.bee_population_by_hive.items()])
+
+            perc_change = 100.0*(pop_today - pop_previous_day)/pop_previous_day
+            return perc_change
+        else:
+            return 0.0
+
+    def get_perc_fertilized_queens_season_end(self):
+        if self.n_days_passed == self.N_days:
+            total_queens_at_season_start = self.num_hives * int(self.initial_bee_type_ratio[Queen] * self.initial_bees_per_hive)
+            fertilized_queens_at_season_end = 0
+            for hive in self.hives:
+                fertilized_queens_at_season_end += hive.get_fertilized_queens_count()
+
+            return 100.0 * (fertilized_queens_at_season_end/total_queens_at_season_start)
+        else:
+            return 0
