@@ -1,6 +1,6 @@
 """Class for the hives"""
 class Hive(object):
-    def __init__(self, id, pos, nectar_units, bees):
+    def __init__(self, id, pos, nectar_units):
         """
         Args:
             id (int): id for the hive.
@@ -11,7 +11,23 @@ class Hive(object):
         self.pos = pos
         self.max_nectar_units = nectar_units
         self.nectar_units = nectar_units
-        self.bees = bees
+        self.bees = set()
+
+    def add_bee(self, bee):
+        """
+        Adds a bee to the hive.
+        Args:
+            bee (Bee): bee to be added to the hive.
+        """
+        self.bees.add(bee)
+
+    def remove_bee(self, bee):
+        """
+        Removes the bee from the hive.
+        Args:
+            bee (Bee): bee to be removed from the hive.
+        """
+        self.bees.discard(bee)
 
     def get_num_bees_present(self):
         """
@@ -66,15 +82,3 @@ class Hive(object):
                 fertilized_count += 1
 
         return fertilized_count
-
-    def remove_bee(self, bee):
-        """
-        Removes the bee from the hive.
-
-        Args:
-            bee (Bee): bee to be removed from the hive.
-        
-        """
-        if bee not in self.bees:
-            raise ValueError("Bee does not belong to this hive.")
-        self.bees.remove(bee)

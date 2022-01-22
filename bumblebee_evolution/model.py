@@ -1,14 +1,14 @@
 ## Class for the Bee evolution model.
-from mesa import Model
 from mesa.space import MultiGrid
+from collections import Counter
+from itertools import product
+from mesa import Model
 from environment import *
 from agents import *
-import numpy as np
-import random
 
 
 class BeeEvolutionModel(Model):
-    def __init__(self, width, height, num_hives, nectar_units, initial_bees_per_hive, daily_steps):
+    def __init__(self, width, height, num_hives, nectar_units, initial_bees_per_hive, daily_steps, rng,alpha, beta, gamma, N_days):
         """
         Args:
             width (int): width of the grid.
@@ -16,10 +16,17 @@ class BeeEvolutionModel(Model):
             num_hives (int): number of hives to be placed in the environment.
             initial_bees_per_hive (int): number of bees to be associated with a hive.
             daily_steps (int): number of steps to be run to simulate a day.
+            rng: a numpy random number generator
         """
+        self.running = True
+        self.N_days = N_days
+        self.alpha = alpha
+        self.beta = beta
+        self.gamma = gamma
         self.height = height
         self.width = width
         self.grid = MultiGrid(width, height, torus=False) #Torus should be false wrapping up the space does not make sense here.
+        self.rng = rng
         
         self.num_hives = num_hives
         self.nectar_units = nectar_units
@@ -37,17 +44,17 @@ class BeeEvolutionModel(Model):
         self.setup_hives_and_bees()
         self.get_env_nectar_needed()
         self.setup_flower_patches()
+        # self.schedule = RandomActivation(self)
 
     def get_initial_bee_type_ratio(self):
         """
         Evaluates the initial proportion of bee types for all the hives.
         """
         type_ratio = {}
-        tmp = 1.0
-        for bee_type in [Drone, Worker, Queen]:
-            ratio = random.uniform(0, tmp)
-            ratio[bee_type] = ratio
-            tmp-= ratio
+        ratios = self.rng.uniform(0, 1, size=3)
+        ratios /= sum(ratios)
+        for i, bee_type in enumerate([Drone, Worker, Queen]):
+            type_ratio[bee_type] = ratios[i]
         return type_ratio
 
     def setup_hives_and_bees(self):
@@ -55,23 +62,19 @@ class BeeEvolutionModel(Model):
         Creates all hives and bees. Then sets them up in the environment.
         """
         for i in range(self.num_hives):
-            pos = (self.random.randrange(self.width), self.random.randrange(self.height))
-
-            new_hive = Hive(i+1, pos, 0, [])
+            # create new hive
+            pos = (self.rng.integers(low=0, high=self.width), 
+                   self.rng.integers(low=0, high=self.height))
+            new_hive = Hive(i+1, pos, 0)
             self.hives.append(new_hive)
-            hive_associated_bees = []
-
-            tmp = self.initial_bees_per_hive
-            for bee_class, ratio in self.initial_bee_type_ratio:
-                num_bees_of_type = min(tmp, ratio*self.initial_bees_per_hive)
-                tmp -= num_bees_of_type
-
-                for j in range(num_bees_of_type):
-                    new_bee = self.new_agent(bee_class, new_hive, pos)
-                    hive_associated_bees.append(new_bee)
-
-            new_hive.bees = hive_associated_bees
             
+            # add bees to new hive
+            for bee_class, ratio in self.initial_bee_type_ratio.items():
+                num_bees_of_type = max(1, int(ratio*self.initial_bees_per_hive))
+                for _ in range(num_bees_of_type):
+                    new_bee = self.create_new_agent(bee_class, pos, new_hive)
+                    new_hive.add_bee(new_bee)
+
 
     def get_env_nectar_needed(self):
         """
@@ -83,25 +86,23 @@ class BeeEvolutionModel(Model):
 
     def setup_flower_patches(self):
         """
-        Creates a flower patch and sets it up.
+        Creates all the flower patches in the environment.
         """
+        # construct set of cells not occupied by hives 
         hives_pos = {hive.pos for hive in self.hives}
-        num_cells_for_flower_patch = self.height*self.width - len(hives_pos)
-        nectar_for_one_patch = self.nectar_units/num_cells_for_flower_patch
+        possible_flower_patch_locations = list(set(product(range(self.height), range(self.width))) - hives_pos)
 
-        for _ in num_cells_for_flower_patch:
-            while(1):
-                pos = (self.random.randrange(self.width), self.random.randrange(self.height))
-                if pos not in hives_pos:
-                    break
+        # number of desired flower patches
+        num_flower_patches = self.height*self.width - len(hives_pos)
+        nectar_for_one_patch = self.nectar_units/num_flower_patches
 
-            cell_concents = self.grid.get_cell_list_contents([pos])
-            flower_patch = [obj for obj in cell_concents if isinstance(obj, FlowerPatch)]
-            if flower_patch:
-                flower_patch[0].flower_patch_size += 1
-                flower_patch[0].update_flower_patch(nectar_for_one_patch)
-            else:
-                self.new_agent(FlowerPatch, pos, nectar_for_one_patch)
+        # dictionary of flower patches and nectar quantities
+        patch_choices = [tuple(x) for x in self.rng.choice(possible_flower_patch_locations, size=num_flower_patches, replace=True)]
+        flower_patches = Counter(patch_choices)
+
+        # create FlowerPatch agents
+        for pos, count in flower_patches.items():
+            self.create_new_agent(FlowerPatch, pos, nectar_for_one_patch*count)
 
     # This function is incorrect because of two reasons:
     # 1. If we want to create a new bee type agent, we need to pass more agruments to this function as needed by
@@ -111,7 +112,7 @@ class BeeEvolutionModel(Model):
 
     # ToDo: Fix this function and wherever it is being referred to.
     # STATUS: Fixed now.
-    def new_agent(self, *argv):
+    def create_new_agent(self, *argv):
         '''
         Method that enables us to add agents of a given type.
         '''
@@ -119,28 +120,33 @@ class BeeEvolutionModel(Model):
         
         # Create a new agent of the given type
         agent_type = argv[0]
-        new_agent = agent_type(self.n_agents, self, *argv[1:])
+        agent = agent_type(self.n_agents, self, *argv[1:])
         
         # Place the agent on the grid
-        self.grid.place_agent(new_agent, new_agent.pos)
+        self.grid.place_agent(agent, agent.pos)
+        # if isinstance(agent,Bee):
+        #     self.schedule.add(agent)
         
         # And add the agent to the model so we can track it
-        self.agents.append(new_agent)
+        self.agents.append(agent)
 
-        return new_agent
+        return agent
 
     def remove_agent(self, agent):
         '''
-        Method that enables us to remove passed agents.
+        Removes an agent from the environment.
         '''
         self.n_agents -= 1
 
-        # Remove agent from the associated hive.
-        agent.hive.remove_bee(agent)
+        # Remove agent from the hive if agent is a bee
+        if isinstance(agent, Bee):
+            agent.hive.remove_bee(agent)
         
         # Remove agent from grid
         self.grid.remove_agent(agent)
-        
+
+        # if isinstance(agent,Bee):
+        #     self.schedule.remove(agent)
         # Remove agent from model
         self.agents.remove(agent)
         
@@ -150,7 +156,10 @@ class BeeEvolutionModel(Model):
         
         Prevents applying step on new agents by creating a local list.
         '''
-        for agent in list(self.agents):
+        #self.schedule.step()
+        agent_list = list(self.agents)
+        self.rng.shuffle(agent_list)
+        for agent in agent_list:
             agent.step()
 
     def run_model(self):
@@ -161,67 +170,84 @@ class BeeEvolutionModel(Model):
             self.step()
 
     def all_agents_to_hive(self):
-        # move all the agents back to the hive
+        """
+        Move all bee agents (drones excluded) back to their hives.
+        """
         for agent in list(self.agents):
-            while agent.pos == agent.hive.pos:
-                agent.back_to_hive()
+            if isinstance(agent, Worker) or isinstance(agent, Queen):
+                self.grid.place_agent(agent, agent.hive.pos)
 
     def feed_all_agents(self):
         # shuffling the agents before feeding
-        self.random.shuffle(self.agents)
-
-        for agent in list(self.agents):
-            if not isinstance(agent, Drone):
-                difference = agent.nectar_needed - agent.health_level
-                if agent.hive.nectar_units > difference:
-                    agent.health_level += difference
-                    agent.hive.nectar_units -= difference
-                else:
-                    agent.health_level += agent.hive.nectar_units
-                    agent.hive.nectar_units = 0
-                
+        for hive in self.hives:
+            # get non-drone bees for the hive
+            bees = [b for b in hive.bees if not isinstance(b, Drone)]
+            self.rng.shuffle(bees)
+            for b in bees:
+                difference = b.nectar_needed - b.health_level
+                if hive.nectar_units > difference:
+                    b.health_level = b.nectar_needed
+                    hive.nectar_units -= difference
+        
     def new_offspring(self):
         '''
         this function will kill the starving agents and create the new ones
         '''
         for agent in list(self.agents):
-            if agent.health_level == 0:
-                # storing old properties
-                agent_hive = agent.hive
-                pos = agent.pos
-                # removing old agent and creating new one with old properties
+            if isinstance(agent, Bee) and agent.health_level < agent.nectar_needed:
+                # create new agent and remove old one
+                new_agent = self.create_new_agent(self.rng.choice([Worker,Drone,Queen]), agent.pos, agent.hive)
+                agent.hive.add_bee(new_agent)
                 self.remove_agent(agent)
-                self.new_agent(np.random.choice([Worker,Drone,Queen], p = [0.34, 0.33, 0.33]), agent_hive, pos)
-                # new_agent.hive = agent_hive
 
-    def mutate_agents(self, alpha, beta, gamma):
+    def mutate_agents(self):
         '''
-        this method will mutate the agents with health level != 0,
-        the agents with health will be killed and generated again in the new_offspring function
+        this method will mutate the agents with health level != nectar_needed,
+        the agents with health != nectar_needed will be killed and generated again in the new_offspring function
         '''
+        coeffs = {Worker: self.alpha, Drone: self.beta, Queen: self.gamma}
+        
         for agent in self.agents:
-            if agent.health != 0:    
-                # initialise an array with all the agent interactions,
-                # it will be [workersOfMyHive, workersOfAnother, dronesOfMyHive, dronesOfAnother, ....]
-                agent_interactions = []
-                for key in agent.encounters.values():
-                    for set in key.values():
-                        agent_interactions.append(len(set))
-                # finding the probabilities 
-                # TODO: improve this part
-                worker_prob = (alpha * agent_interactions[0] + (1-alpha) * agent_interactions[1])/sum(agent_interactions)
-                drone_prob = (beta * agent_interactions[2] + (1-beta) * agent_interactions[3])/sum(agent_interactions)
-                queen_prob = (gamma * agent_interactions[4] + (1-gamma) * agent_interactions[5])/sum(agent_interactions)
-                prob_sum = queen_prob + drone_prob + worker_prob
-                worker_prob /= prob_sum
-                drone_prob /= prob_sum
-                queen_prob /= prob_sum
-                # saving agent attributes
-                last_resource = agent.last_resource
-                agent_hive = agent.hive
-                pos = agent.pos
+            # entering in the mutation process only if the bee has been feed.
+            if isinstance(agent, Bee) and agent.health_level == agent.nectar_needed:    
+
+                # find the probabilities of choosing each bee type based onencounters
+                agent_probs = {}
+                for bee_type, encounters in agent.encounters.items():
+                    own_hive = len(encounters['own_hive'])
+                    other_hive = len(encounters['other_hive'])
+
+                    # calculating with encounter numbers instead of proportions
+                    # here; probabilities are normalised later, so this approach
+                    # is equivalent
+                    agent_probs[bee_type] = (coeffs[bee_type]*own_hive 
+                                             + (1-coeffs[bee_type])*other_hive)
+
+                # 1. normalise into probabilities by dividing by sum
+                # 2. make probabilities 'inversely' (loosely speaking) proportional
+                #    to the original ones by substracting from 1 and dividing by
+                #    2 to make sure they again add up to 1
+                prob_sum = sum(agent_probs.values())
+                # there were no encounters, so avoid mutating
+                if prob_sum == 0:
+                    return
+
+                agent_probs = {bee_type: (1-(prob/prob_sum))/2 for bee_type, prob in agent_probs.items()}
+
+                # add new agent and remove old one
+                new_agent = self.create_new_agent(
+                    self.rng.choice(list(agent_probs.keys()),
+                    p=list(agent_probs.values())), agent.pos, agent.hive)
+                new_agent.last_resource = agent.last_resource
+                agent.hive.add_bee(new_agent)
                 self.remove_agent(agent)
-                # adding new agent and old properties
-                new_agent = self.new_agent(np.random.choice([Worker,Drone,Queen], p = [worker_prob, drone_prob, queen_prob]), agent_hive, pos)
-                new_agent.last_resource = last_resource
-                # new_agent.hive = agent_hive
+
+    def run_multiple_days(self):
+        # running N days
+        for i in range(self.N_days):
+            self.run_model()
+            self.all_agents_to_hive()
+            self.feed_all_agents()
+            self.mutate_agents()
+            self.new_offspring()
+
