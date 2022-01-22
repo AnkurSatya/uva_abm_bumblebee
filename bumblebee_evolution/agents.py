@@ -338,6 +338,7 @@ class Hive(Agent):
 		self.nectar_units = nectar_units
 		self.bees = set()
 		self.timestep_counter = 0
+		self.bee_population_by_type = None
 
 	def add_bee(self, bee):
 		"""
@@ -372,18 +373,19 @@ class Hive(Agent):
 	def get_bees_type_count(self):
 		"""
 		Returns:
-			dict: {'MaleBee': num present in the hive, 'WorkerBee': num present in the hive, 'QueenBee': num present in the hive}
+			dict: {Worker: num associated with the hive, Queen: num associated with the hive, Drone: num associated with the hive}
 		"""
-		bee_type_count = {
-			"Drone": 0, 
-			"Worker": 0,
-			"Queen": 0}
+		bee_type_count = {}
 		for bee in self.bees:
-			bee_type_count[bee.name] += 1
+			bee_type = type(bee).__name__
+			if bee_type not in bee_type_count:
+				bee_type_count[bee_type] = 1
+			else:
+				bee_type_count[bee_type] += 1
 
 		return bee_type_count
 
-	def get_fertilized_queens(self):
+	def get_fertilized_queens_count(self):
 		"""
 		Returns:
 			int: the number of queen bees fertilized which are associated with the hive.
@@ -467,3 +469,7 @@ class Hive(Agent):
 			self.bees_to_hive()
 			self.feed_bees()
 			self.generate_next_generation()
+
+			self.model.bee_population_by_hive_previous_day[self.unique_id] = self.bee_population_by_type.copy()
+			self.bee_population_by_type = self.get_bees_type_count()
+			self.model.bee_population_by_hive[self.unique_id] = self.bee_population_by_type.copy()
