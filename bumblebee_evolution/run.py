@@ -20,4 +20,4 @@ rng = np.random.default_rng(1)
 model = BeeEvolutionModel(width, height, num_hives, nectar_units, initial_bees_per_hive, daily_steps, rng, alpha, beta, gamma, N_days)
 
 # running N days
-model.run_multiple_days()
+model.run_model()

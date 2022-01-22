@@ -3,9 +3,7 @@ from mesa.space import MultiGrid
 from collections import Counter
 from itertools import product
 from mesa import Model
-from environment import *
 from agents import *
-
 
 class BeeEvolutionModel(Model):
     def __init__(self, width, height, num_hives, nectar_units, initial_bees_per_hive, daily_steps, rng, alpha, beta, gamma, N_days):
@@ -61,7 +59,10 @@ class BeeEvolutionModel(Model):
         """
         hive_positions = [tuple(item) for item in self.rng.choice(list(self.grid_locations), size=self.num_hives, replace=False)]
         for i, pos in enumerate(hive_positions):
-            new_hive = Hive(i+1, pos, 0)
+
+            new_hive = self.create_new_agent(Hive, pos, 0)
+            #new_hive = Hive(i+1, pos, 0)
+
             self.hives.append(new_hive)
             # add bees to new hive
             for bee_class, ratio in self.initial_bee_type_ratio.items():
@@ -75,7 +76,7 @@ class BeeEvolutionModel(Model):
         Evaluates the nectar needed for the setting up the environment.
         """
         for agent in self.agents:
-            if not isinstance(agent, FlowerPatch):
+            if isinstance(agent, Bee):
                 self.nectar_units += agent.nectar_needed
 
     def setup_flower_patches(self):
@@ -139,114 +140,26 @@ class BeeEvolutionModel(Model):
         # Remove agent from grid
         self.grid.remove_agent(agent)
 
-        # if isinstance(agent,Bee):
-        #     self.schedule.remove(agent)
         # Remove agent from model
         self.agents.remove(agent)
-        
+
     def step(self):
         '''
         Method that steps every agent. 
-        
         Prevents applying step on new agents by creating a local list.
         '''
-        #self.schedule.step()
         agent_list = list(self.agents)
         self.rng.shuffle(agent_list)
         for agent in agent_list:
-            agent.step()
+            if not isinstance(agent, Hive):
+                agent.step()
+        for hive in self.hives:
+            hive.step()
 
     def run_model(self):
         '''
         Method that runs the model for a specific amount of steps.
         '''
-        for _ in range(self.daily_steps):
-            self.step()
-
-    def all_agents_to_hive(self):
-        """
-        Move all bee agents (drones excluded) back to their hives.
-        """
-        for agent in list(self.agents):
-            if isinstance(agent, Worker) or isinstance(agent, Queen):
-                self.grid.place_agent(agent, agent.hive.pos)
-
-    def feed_all_agents(self):
-        # shuffling the agents before feeding
-        for hive in self.hives:
-            # get non-drone bees for the hive
-            bees = [b for b in hive.bees if not isinstance(b, Drone)]
-            self.rng.shuffle(bees)
-            for b in bees:
-                difference = b.nectar_needed - b.health_level
-                if hive.nectar_units > difference:
-                    b.health_level = b.nectar_needed
-                    hive.nectar_units -= difference
-
-    def new_offspring(self):
-        '''
-        this function will kill the starving agents and create the new ones
-        '''
-        for agent in list(self.agents):
-            if isinstance(agent, Bee) and agent.health_level < agent.nectar_needed:
-                # create new agent and remove old one
-                new_agent = self.create_new_agent(self.rng.choice([Worker,Drone,Queen]), agent.pos, agent.hive)
-                agent.hive.add_bee(new_agent)
-                self.remove_agent(agent)
-
-    def mutate_agents(self):
-        '''
-        this method will mutate the agents with health level != nectar_needed,
-        the agents with health != nectar_needed will be killed and generated again in the new_offspring function
-        '''
-        coeffs = {Worker: self.alpha, Drone: self.beta, Queen: self.gamma}
-
-        for agent in self.agents:
-            # entering in the mutation process only if the bee has been feed.
-            if isinstance(agent, Bee) and agent.health_level == agent.nectar_needed:    
-
-                # find the probabilities of choosing each bee type based onencounters
-                agent_probs = {}
-                for bee_type, encounters in agent.encounters.items():
-                    own_hive = len(encounters['own_hive'])
-                    other_hive = len(encounters['other_hive'])
-
-                    # calculating with encounter numbers instead of proportions
-                    # here; probabilities are normalised later, so this approach
-                    # is equivalent
-                    agent_probs[bee_type] = (coeffs[bee_type]*own_hive 
-                                             + (1-coeffs[bee_type])*other_hive)
-
-                # 1. normalise into probabilities by dividing by sum
-                # 2. make probabilities 'inversely' (loosely speaking) proportional
-                #    to the original ones by substracting from 1 and dividing by
-                #    2 to make sure they again add up to 1
-                prob_sum = sum(agent_probs.values())
-                # there were no encounters, so avoid mutating
-                if prob_sum == 0:
-                    return
-
-                agent_probs = {bee_type: (1-(prob/prob_sum))/2 for bee_type, prob in agent_probs.items()}
-
-                # add new agent and remove old one
-                new_agent = self.create_new_agent(
-                    self.rng.choice(list(agent_probs.keys()),
-                    p=list(agent_probs.values())), agent.pos, agent.hive)
-                new_agent.last_resource = agent.last_resource
-                agent.hive.add_bee(new_agent)
-                self.remove_agent(agent)
-
-    def reset_health_levels(self):
-        for agent in self.agents:
-            if isinstance(agent, Bee):
-                agent.health_level = 0
-
-    def run_multiple_days(self):
-        # running N days
-        for i in range(self.N_days):
-            self.run_model()
-            self.all_agents_to_hive()
-            self.feed_all_agents()
-            self.mutate_agents()
-            self.new_offspring()
-            self.reset_health_levels()
+        for _ in range(self.N_days):
+            for _ in range(self.daily_steps):
+                self.step()

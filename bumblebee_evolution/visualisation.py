@@ -4,35 +4,37 @@ from mesa.visualization.ModularVisualization import ModularServer
 
 
 def agent_portrayal(agent):
-    portrayal = {"Shape": "circle",
-                 "Filled": "true",
-                 "r": 0.5}
-
-    if isinstance(agent, Drone):
-        portrayal["Color"] = "red"
-        portrayal["Layer"] = 2
-    elif isinstance(agent, Queen):
-        portrayal["Color"] = "green"
-        portrayal["Layer"] = 3
-    elif isinstance(agent, Worker):
-        portrayal["Color"] = "blue"
-        portrayal["Layer"] = 3
+    portrayal = {
+        Drone       : {"Shape":"circle", "r":0.3, "Color":"Yellow", "Filled":"false", "Layer":3},
+        Queen       : {"Shape":"circle", "r":0.8, "Color":"Red", "Filled":"false", "Layer":1},
+        Worker      : {"Shape":"circle", "r":0.5, "Color":"Blue", "Filled":"false", "Layer":2},
+        Hive        : {"Shape":"rect", "w":1, "h":1, "Color":"Black", "Filled":"true", "Layer":0},
+        FlowerPatch : {"Shape":"rect", "w":1, "h":1, "Layer":0, "Filled":"true", "Layer":0}
+    }
+    if isinstance(agent, Bee):
+        return portrayal[agent.bee_type]
     elif isinstance(agent, Hive):
-        portrayal["Color"] = "orange"
-        portrayal["Layer"] = 4
-    else:
-        portrayal["Color"] = "black"
-        portrayal["Layer"] = 1
-        portrayal["r"]=0.1
+        return portrayal[Hive]
+    elif isinstance(agent, FlowerPatch):
+        if agent.nectar_units == 0:
+            portrayal[FlowerPatch]["Color"] = "White"
+        else:
+            portrayal[FlowerPatch]["Color"] = "Green"
 
-    return portrayal
+        return portrayal[FlowerPatch]
 
 grid = CanvasGrid(agent_portrayal, 30, 30, 500, 500)
 
 server = ModularServer(BeeEvolutionModel,
                        [grid],
                        "Model",
-                       {"width":30, "height":30, "num_hives":5, "nectar_units":100000, "initial_bees_per_hive":100,"daily_steps":100,"rng": np.random.default_rng(1),"alpha":1,"beta":1,"gamma":1,"N_days":2})
+                       {"width":30, "height":30, 
+                       "num_hives":2, "nectar_units":100000, 
+                       "initial_bees_per_hive":10, 
+                       "daily_steps":10, 
+                       "rng": np.random.default_rng(1),
+                       "alpha":1, "beta":1, "gamma":1, 
+                       "N_days":2})
 
 
 server.port = 8521 # The default
