@@ -1,5 +1,5 @@
 from model import *
-from mesa.visualization.modules import CanvasGrid
+from mesa.visualization.modules import CanvasGrid, ChartModule
 from mesa.visualization.ModularVisualization import ModularServer
 
 
@@ -27,13 +27,29 @@ width, height = 50, 50
 
 grid = CanvasGrid(agent_portrayal, width, height, 500, 500)
 
+chart_worker = ChartModule([{"Label": "percentage change in Worker",
+                      "Color": "Black"}],
+                    data_collector_name='datacollector')
+
+chart_queen = ChartModule([{"Label": "percentage change in Queen",
+                      "Color": "Black"}],
+                    data_collector_name='datacollector')
+
+chart_drone = ChartModule([{"Label": "percentage change in Drone",
+                      "Color": "Black"}],
+                    data_collector_name='datacollector')
+
+chart_fertilized_queens = ChartModule([{"Label": "percentage queens fertilized",
+                      "Color": "Black"}],
+                    data_collector_name='datacollector')
+
 server = ModularServer(BeeEvolutionModel,
-                       [grid],
+                       [grid, chart_worker, chart_queen, chart_drone, chart_fertilized_queens],
                        "Model",
                        {"width":width, "height":height, 
                        "num_hives":5, "nectar_units":100000, 
-                       "initial_bees_per_hive":20, 
-                       "daily_steps":50, 
+                       "initial_bees_per_hive":200, 
+                       "daily_steps":20, 
                        "rng": np.random.default_rng(1),
                        "alpha":1, "beta":1, "gamma":1, 
                        "N_days":2})
