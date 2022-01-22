@@ -216,7 +216,7 @@ class Queen(Bee):
 		drone.health_level = drone.nectar_needed
 		drone.last_resource = None
 		drone.isCollectinve = False
-		self.model.grid.place_agent(drone, drone.hive.pos)
+		self.model.grid.move_agent(drone, drone.hive.pos)
 
 	def step(self):
 		'''
