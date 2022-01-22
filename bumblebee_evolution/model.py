@@ -174,8 +174,8 @@ class BeeEvolutionModel(Model):
         Move all bee agents (drones excluded) back to their hives.
         """
         for agent in list(self.agents):
-            #if isinstance(agent, Worker) or isinstance(agent, Queen):
-            self.grid.place_agent(agent, agent.hive.pos)
+            if isinstance(agent, Worker) or isinstance(agent, Queen):
+                self.grid.place_agent(agent, agent.hive.pos)
 
     def feed_all_agents(self):
         # shuffling the agents before feeding
@@ -202,13 +202,14 @@ class BeeEvolutionModel(Model):
 
     def mutate_agents(self):
         '''
-        this method will mutate the agents with health level != 0,
-        the agents with zero health will be killed and generated again in the new_offspring function
+        this method will mutate the agents with health level != nectar_needed,
+        the agents with health != nectar_needed will be killed and generated again in the new_offspring function
         '''
         coeffs = {Worker: self.alpha, Drone: self.beta, Queen: self.gamma}
         
         for agent in self.agents:
-            if isinstance(agent, Bee) and agent.health_level != 0:    
+            # entering in the mutation process only if the bee has been feed.
+            if isinstance(agent, Bee) and agent.health_level != agent.nectar_needed:    
 
                 # find the probabilities of choosing each bee type based onencounters
                 agent_probs = {}
