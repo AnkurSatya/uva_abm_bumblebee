@@ -8,7 +8,7 @@ from agents import *
     
 
 class BeeEvolutionModel(Model):
-    def __init__(self, width, height, num_hives, nectar_units, initial_bees_per_hive, daily_steps, rng, alpha, beta, gamma, N_days):
+    def __init__(self, width, height, num_hives, initial_bees_per_hive, daily_steps, rng, alpha, beta, gamma, N_days):
         """
         Args:
             width (int): width of the grid.
@@ -30,7 +30,6 @@ class BeeEvolutionModel(Model):
         self.grid_locations = set(product(range(self.height), range(self.width)))
         
         self.num_hives = num_hives
-        self.nectar_units = nectar_units
 
         self.initial_bees_per_hive = initial_bees_per_hive
         self.initial_bee_type_ratio = self.get_initial_bee_type_ratio()
@@ -43,7 +42,7 @@ class BeeEvolutionModel(Model):
         self.agents = []
 
         self.setup_hives_and_bees()
-        self.get_env_nectar_needed()
+        self.nectar_units = self.get_env_nectar_needed() * 100
         self.setup_flower_patches()
  
         # self.schedule = RandomActivation(self)
@@ -98,9 +97,11 @@ class BeeEvolutionModel(Model):
         """
         Evaluates the nectar needed for the setting up the environment.
         """
+        nectar = 0
         for agent in self.agents:
             if isinstance(agent, Bee):
-                self.nectar_units += agent.nectar_needed
+                nectar += agent.nectar_needed
+        return nectar
 
     def setup_flower_patches(self):
         """
