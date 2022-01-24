@@ -50,9 +50,9 @@ class BeeEvolutionModel(Model):
 
         #Data collection
         self.datacollector = DataCollector (
-            {"Total Workers": lambda m: m.get_bees_of_each_type(Worker),
-             "Total Queens": lambda m: m.get_bees_of_each_type(Queen),
-             "Total Drones": lambda m: m.get_bees_of_each_type(Drone),
+            {"Percentage of Workers": lambda m: m.get_bees_of_each_type(Worker),
+             "Percentage of Queens": lambda m: m.get_bees_of_each_type(Queen),
+             "Percentage of Drones": lambda m: m.get_bees_of_each_type(Drone),
              "Total Fertilized Queens": lambda m: m.get_total_fertilized_queens()}
         )
 
@@ -176,23 +176,27 @@ class BeeEvolutionModel(Model):
         if self.step_count % self.daily_steps == 0:
             self.n_days_passed += 1
 
-        self.datacollector.collect(self)
-
     def run_model(self):
         '''
         Method that runs the model for a specific amount of steps.
         '''
         for _ in range(self.N_days):
+            self.datacollector.collect(self)
             for _ in range(self.daily_steps):
                 self.step()
+        self.datacollector.collect(self)
 
     def get_bees_of_each_type(self, bee_type):
         if self.step_count % self.daily_steps == 0:
             count = 0
+            total_bee = 0
             for item in self.agents:
                 if isinstance(item, bee_type):
                     count += 1
-            return count
+                    total_bee += 1
+                elif isinstance(item, Bee):
+                    total_bee += 1
+            return count/total_bee
 
     def get_total_fertilized_queens(self):
         if self.n_days_passed == self.N_days:

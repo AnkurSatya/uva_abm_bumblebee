@@ -27,15 +27,15 @@ width, height = 25, 25
 
 grid = CanvasGrid(agent_portrayal, width, height, 500, 500)
 
-chart_worker = ChartModule([{"Label": "Total Workers",
+chart_worker = ChartModule([{"Label": "Percentage of Workers",
                       "Color": "Black"}],
                     data_collector_name='datacollector')
 
-chart_queen = ChartModule([{"Label": "Total Queens",
+chart_queen = ChartModule([{"Label": "Percentage of Queens",
                       "Color": "Black"}],
                     data_collector_name='datacollector')
 
-chart_drone = ChartModule([{"Label": "Total Drones",
+chart_drone = ChartModule([{"Label": "Percentage of Drones",
                             "Color": "Black"}],
                             data_collector_name='datacollector')
 
@@ -44,7 +44,7 @@ chart_fertilized_queens = ChartModule([{"Label": "Total Fertilized Queens",
                                         data_collector_name='datacollector')
 
 server = ModularServer(BeeEvolutionModel,
-                       [grid, chart_worker, chart_queen, chart_drone, chart_fertilized_queens],
+                       [grid, chart_worker, chart_queen, chart_drone],
                        "Model",
                        {"width":width, "height":height, 
                        "num_hives":3,
