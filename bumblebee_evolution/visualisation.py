@@ -36,12 +36,12 @@ chart_queen = ChartModule([{"Label": "Total Queens",
                     data_collector_name='datacollector')
 
 chart_drone = ChartModule([{"Label": "Total Drones",
-                      "Color": "Black"}],
-                    data_collector_name='datacollector')
+                            "Color": "Black"}],
+                            data_collector_name='datacollector')
 
 chart_fertilized_queens = ChartModule([{"Label": "Total Fertilized Queens",
-                      "Color": "Black"}],
-                    data_collector_name='datacollector')
+                                        "Color": "Black"}],
+                                        data_collector_name='datacollector')
 
 server = ModularServer(BeeEvolutionModel,
                        [grid, chart_worker, chart_queen, chart_drone, chart_fertilized_queens],

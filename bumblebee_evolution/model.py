@@ -42,14 +42,14 @@ class BeeEvolutionModel(Model):
         self.agents = []
 
         self.setup_hives_and_bees()
-        self.nectar_units = self.get_env_nectar_needed() * 100 # TODO : adjust this quantity
+        self.nectar_units = self.get_env_nectar_needed() * 5 # TODO : adjust this quantity
         self.setup_flower_patches()
 
         self.step_count = 0
         self.n_days_passed = 0
 
         #Data collection
-        self.datacollector = DataCollector(
+        self.datacollector = DataCollector (
             {"Total Workers": lambda m: m.get_bees_of_each_type(Worker),
              "Total Queens": lambda m: m.get_bees_of_each_type(Queen),
              "Total Drones": lambda m: m.get_bees_of_each_type(Drone),
@@ -192,6 +192,7 @@ class BeeEvolutionModel(Model):
             for item in self.agents:
                 if isinstance(item, bee_type):
                     count += 1
+            return count
 
     def get_total_fertilized_queens(self):
         if self.n_days_passed == self.N_days:
