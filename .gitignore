@@ -1,6 +1,11 @@
 bumblebee_env/**
 .vscode/**
+<<<<<<< HEAD
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
+=======
+__pycache__/
+*.py[cod]
+>>>>>>> model_revision

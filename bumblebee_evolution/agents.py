@@ -2,6 +2,7 @@ from environment import *
 from mesa import Agent
 import numpy as np
 
+
 class Bee(Agent):
 	def __init__(self, unique_id, model, pos, hive, nectar_needed):
 		"""
@@ -17,7 +18,7 @@ class Bee(Agent):
 		self.hive = hive
 		self.pos = pos
 		self.nectar_needed = nectar_needed
-		self.health_level = nectar_needed # health is full upon initialization
+		self.health_level = 0 # health is empty upon initialization
 		self.isCollecting = False
 		self.last_resource = None
 		self.encounters = {
@@ -46,7 +47,10 @@ class Bee(Agent):
 		'''
 		This method should get the neighbouring cells (Moore's neighbourhood), select one, and move the agent to this cell.
 		'''
-		neighbouring_cells = self.model.grid.get_neighborhood(self.pos, moore=True)
+		try:
+			neighbouring_cells = self.model.grid.get_neighborhood(self.pos, moore=True)
+		except:
+			import IPython; IPython.embed()
 		if self.hive.pos in neighbouring_cells:
 			neighbouring_cells.remove(self.hive.pos)
 
@@ -93,16 +97,15 @@ class Bee(Agent):
 class Worker(Bee):
 	def __init__(self, unique_id, model, pos, hive, nectar_needed=236):
 		"""
-        Args:
-            unique_id (int): unique id for the bee.
-            model (BeeEvolutionModel): the model being used for the simulations.
-            pos (tuple(int, int)): The position of the bee in the environment.
+		Args:
+			unique_id (int): unique id for the bee.
+			model (BeeEvolutionModel): the model being used for the simulations.
+			pos (tuple(int, int)): The position of the bee in the environment.
 			hive (Hive): the original hive of the bee
 			nectar_needed (int): amount of nectar needed per day
-        """
+		"""
 		super().__init__(unique_id, model, pos, hive, nectar_needed)
 
-		self.name = "Worker"
 		self.max_nectar = 44  # bumble bees carry average of ~25% their body weight, which is 150-200mg, so about 44mg
 		self.stored_nectar = 0
 		self.bee_type = Worker
@@ -133,7 +136,7 @@ class Worker(Bee):
 
 		elif self.isCollecting == True:
 			self.isCollecting = False
-      
+	  
 		else: # neither full nor collecting, then the bee should move
 			if self.last_resource:
 				self.move_towards_resource()
@@ -154,16 +157,15 @@ class Worker(Bee):
 class Drone(Bee):
 	def __init__(self, unique_id, model, pos, hive, nectar_needed=236):
 		"""
-        Args:
-            unique_id (int): unique id for the bee.
-            model (BeeEvolutionModel): the model being used for the simulations.
-            pos (tuple(int, int)): The position of the bee in the environment.
+		Args:
+			unique_id (int): unique id for the bee.
+			model (BeeEvolutionModel): the model being used for the simulations.
+			pos (tuple(int, int)): The position of the bee in the environment.
 			hive (Hive): the original hive of the bee.
 			nectar_needed (int): amount of nectar needed per day.
-        """
+		"""
 		super().__init__(unique_id, model, pos, hive, nectar_needed)
 
-		self.name = "Drone"
 		self.bee_type = Drone
 
 	def step(self):
@@ -188,7 +190,7 @@ class Drone(Bee):
 
 
 class Queen(Bee):
-	def __init__(self, unique_id, model, pos, hive, nectar_needed=740, fertilized=False, isMating=False):
+	def __init__(self, unique_id, model, pos, hive, nectar_needed=740):
 		"""
 		Args:
 			unique_id (int): unique id for the bee.
@@ -196,19 +198,16 @@ class Queen(Bee):
 			pos (tuple(int, int)): The position of the bee in the environment.
 			hive (Hive): the original hive of the bee.
 			nectar_needed (int): amount of nectar needed per day.
-			fertilized (bool): whether queen has been fertilized or not.
-			isMating (bool): indicates whether queen is currently mating.
 		"""
 		super().__init__(unique_id, model, pos, hive, nectar_needed)
 
-		self.name = "Queen"
-		self.fertilized = fertilized
-		self.isMating = isMating
 		self.bee_type = Queen
 
 	def mate(self, drone):
-		self.fertilized = True
-		print("reproduction!")
+		self.hive.number_fertilized_queens += 1
+		self.hive.remove_bee(self)
+		self.model.remove_agent(self)
+		drone.hive.remove_bee(drone)
 		self.model.remove_agent(drone)
 
 	def step(self):
@@ -217,11 +216,6 @@ class Queen(Bee):
 		'''
 		# in hive and full on nectar, no action required
 		if self.pos == self.hive.pos and self.health_level == self.nectar_needed:
-			return
-
-		# spend a timestep mating, no movement
-		if self.isMating:
-			self.isMating = False
 			return
 
 		# spend a timestep collecting resources, no movement
@@ -245,14 +239,6 @@ class Queen(Bee):
 
 		# gather cell contents after moving
 		cur_cell_contents = self.model.grid.get_cell_list_contents((int(self.pos[0]), int(self.pos[1])))
-
-		# prioritize possibility of mating with drone from different hive
-		if not self.fertilized:
-			drones = [item for item in cur_cell_contents if isinstance(item, Drone) and item.hive != self.hive]
-			if len(drones):
-				# next timestep will be spent mating
-				self.mate(self.model.rng.choice(drones))
-				return
 
 		# did not mate, and we have just executed a random move, or have reached last_resource and need more nectar
 		if self.health_level < self.nectar_needed:
@@ -282,8 +268,7 @@ class FlowerPatch(Agent):
 
 		#represents how many times the 'pos' of this flower patch was sampled during the setting up of the environment.
 		self.flower_patch_size = 1
-
-		self.base_replenishing_quantity = 0.1
+		self.base_replenishing_quantity = self.max_nectar_units / self.model.daily_steps
 
 		# This should be proportional to the initial nectar quantity of the flower patch because 
 		# different flower patch may have different initial quantity due to the way the flower 
@@ -314,3 +299,118 @@ class FlowerPatch(Agent):
 		1. replenish the flower patch with nectar.
 		"""
 		self.nectar_units = min(self.max_nectar_units, self.nectar_units + self.replenishing_quantity)
+
+
+"""Class for the hives"""
+class Hive(Agent):
+	def __init__(self, unique_id, model, pos, nectar_units):
+		"""
+		Args:
+			unique_id (int): unique_id for the hive.
+			pos (tuple(int, int)): position of the hive in the environment.
+			nectar_units (float): nectar in the hive at the beginning of model run.
+		"""
+		super().__init__(unique_id, model)
+		self.pos = pos
+		self.max_nectar_units = nectar_units
+		self.nectar_units = nectar_units
+		self.bees = set()
+		self.timestep_counter = 0
+		self.number_fertilized_queens = 0
+
+	def add_bee(self, bee):
+		"""
+		Adds a bee to the hive.
+		Args:
+			bee (Bee): bee to be added to the hive.
+		"""
+		self.bees.add(bee)
+
+	def remove_bee(self, bee):
+		"""
+		Removes the bee from the hive.
+		Args:
+			bee (Bee): bee to be removed from the hive.
+		"""
+		self.bees.discard(bee)
+
+	def bees_to_hive(self):
+		for b in list(self.bees):
+			if not isinstance(b, Drone):
+				self.model.grid.move_agent(b, self.pos)
+
+	def feed_and_kill_bees(self):
+		# shuffling the agents before feeding
+		bees = list(self.bees)
+		self.model.rng.shuffle(bees)
+		for b in bees:
+			# kill drones if they did not find enough food
+			if isinstance(b, Drone):
+				if b.health_level < b.nectar_needed:
+					self.remove_bee(b)
+					self.model.remove_agent(b)
+			else:
+				# difference is how much nectar the bee needs to survive
+				difference = b.nectar_needed - b.health_level
+				# if hive nectar is at least difference, remove difference units form hive nectar
+				if difference <= self.nectar_units:
+					self.nectar_units -= difference
+				else:
+					# not enough stored nectar to feed bee, so it dies
+					self.remove_bee(b)
+					self.model.remove_agent(b)
+
+	def generate_next_generation(self):
+		'''
+		this method will mutate the agents with health level != nectar_needed,
+		the agents with health != nectar_needed will be killed and generated again in the new_offspring function
+		'''
+		coeffs = {Worker: self.model.alpha, Drone: self.model.beta, Queen: self.model.gamma}
+
+		for b in list(self.bees):
+			# find the probabilities of choosing each bee type based onencounters
+			agent_probs = {}
+			for bee_type, encounters in b.encounters.items():
+				own_hive = len(encounters['own_hive'])
+				other_hive = len(encounters['other_hive'])
+
+				# calculating with encounter numbers instead of proportions
+				# here; probabilities are normalised later, so this approach
+				# is equivalent
+				agent_probs[bee_type] = (coeffs[bee_type]*own_hive + (1-coeffs[bee_type])*other_hive)
+
+			# 1. normalise into probabilities by dividing by sum
+			# 2. make probabilities 'inversely' (loosely speaking) proportional
+			#    to the original ones by substracting from 1 and dividing by
+			#    2 to make sure they again add up to 1
+			prob_sum = sum(agent_probs.values())
+			# there were no encounters, so avoid mutating
+			if prob_sum == 0:
+				return
+
+			agent_probs = {bee_type: (1-(prob/prob_sum))/2 for bee_type, prob in agent_probs.items()}
+
+			# add new agent and remove old one
+			new_agent = self.model.create_new_agent(
+				self.model.rng.choice(list(agent_probs.keys()),
+				p=list(agent_probs.values())), b.pos, b.hive)
+			new_agent.last_resource = b.last_resource
+			new_agent.isCollecting = False
+			b.hive.add_bee(new_agent)
+			self.model.remove_agent(b)
+			b.hive.remove_bee(b)
+
+	def spawn_new_bees(self):
+		while self.nectar_units > 0:
+			new_agent = self.model.create_new_agent(
+				self.model.rng.choice([Worker, Drone, Queen]), self.pos, self)
+			self.add_bee(new_agent)
+			self.nectar_units = max(0, self.nectar_units - new_agent.nectar_needed)
+
+	def step(self):
+		self.timestep_counter += 1
+		if (self.timestep_counter) % self.model.daily_steps == 0:
+			self.feed_and_kill_bees()
+			self.generate_next_generation()
+			self.bees_to_hive()
+			self.spawn_new_bees()
