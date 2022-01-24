@@ -23,7 +23,7 @@ def agent_portrayal(agent):
 
         return portrayal[FlowerPatch]
 
-width, height = 50, 50
+width, height = 25, 25
 
 grid = CanvasGrid(agent_portrayal, width, height, 500, 500)
 
@@ -31,16 +31,12 @@ server = ModularServer(BeeEvolutionModel,
                        [grid],
                        "Model",
                        {"width":width, "height":height, 
-                       "num_hives":5, "nectar_units":100000, 
+                       "num_hives":3,
                        "initial_bees_per_hive":20, 
-                       "daily_steps":50, 
+                       "daily_steps":100, 
                        "rng": np.random.default_rng(1),
                        "alpha":1, "beta":1, "gamma":1, 
                        "N_days":2})
 
-
 server.port = 8521 # The default
 server.launch()
-
-
-
