@@ -106,7 +106,6 @@ class Worker(Bee):
 		"""
 		super().__init__(unique_id, model, pos, hive, nectar_needed)
 
-		self.name = "Worker"
 		self.max_nectar = 44  # bumble bees carry average of ~25% their body weight, which is 150-200mg, so about 44mg
 		self.stored_nectar = 0
 		self.bee_type = Worker
@@ -167,7 +166,6 @@ class Drone(Bee):
 		"""
 		super().__init__(unique_id, model, pos, hive, nectar_needed)
 
-		self.name = "Drone"
 		self.bee_type = Drone
 
 	def step(self):
@@ -203,7 +201,6 @@ class Queen(Bee):
 		"""
 		super().__init__(unique_id, model, pos, hive, nectar_needed)
 
-		self.name = "Queen"
 		self.bee_type = Queen
 
 	def mate(self, drone):
@@ -320,7 +317,6 @@ class Hive(Agent):
 		self.bees = set()
 		self.timestep_counter = 0
 		self.number_fertilized_queens = 0
-		self.bee_population_by_type = None
 
 	def add_bee(self, bee):
 		"""
@@ -337,47 +333,6 @@ class Hive(Agent):
 			bee (Bee): bee to be removed from the hive.
 		"""
 		self.bees.discard(bee)
-
-	def get_bees_of_type(self, bee_type):
-		"""
-		Args:
-			bee_type (string): type of the bee
-
-		Returns:
-			List(MaleBee/WorkerBee/QueenBee): a list of bee agents belonging to the bee_type.
-		"""
-		type_bees = []
-		for bee in list(self.bees):
-			if bee.name == bee_type:
-				type_bees.append(bee)
-		return type_bees
-
-	def get_bees_type_count(self):
-		"""
-		Returns:
-			dict: {Worker: num associated with the hive, Queen: num associated with the hive, Drone: num associated with the hive}
-		"""
-		bee_type_count = {}
-		for bee in self.bees:
-			bee_type = type(bee).__name__
-			if bee_type not in bee_type_count:
-				bee_type_count[bee_type] = 1
-			else:
-				bee_type_count[bee_type] += 1
-
-		return bee_type_count
-
-	def get_fertilized_queens_count(self):
-		"""
-		Returns:
-			int: the number of queen bees fertilized which are associated with the hive.
-		"""
-		queen_bees = self.get_bees_of_type("Queen")
-		fertilized_count = 0
-		for bee in queen_bees:
-			if bee.fertilized:
-				fertilized_count += 1
-		return fertilized_count
 
 	def bees_to_hive(self):
 		for b in list(self.bees):
@@ -455,11 +410,7 @@ class Hive(Agent):
 	def step(self):
 		self.timestep_counter += 1
 		if (self.timestep_counter) % self.model.daily_steps == 0:
-			print([(b.health_level==b.nectar_needed) for b in list(self.bees)])
 			self.feed_and_kill_bees()
-			print([(b.health_level==b.nectar_needed) for b in list(self.bees)])
 			self.generate_next_generation()
 			self.bees_to_hive()
 			self.spawn_new_bees()
-			self.bee_population_by_type = self.get_bees_type_count()
-			self.model.bee_population_by_hive[self.unique_id] = self.bee_population_by_type.copy()

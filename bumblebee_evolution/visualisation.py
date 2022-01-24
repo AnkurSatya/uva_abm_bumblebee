@@ -27,19 +27,19 @@ width, height = 25, 25
 
 grid = CanvasGrid(agent_portrayal, width, height, 500, 500)
 
-chart_worker = ChartModule([{"Label": "percentage of Workers in the population",
+chart_worker = ChartModule([{"Label": "Total Workers",
                       "Color": "Black"}],
                     data_collector_name='datacollector')
 
-chart_queen = ChartModule([{"Label": "percentage of Queens in the population",
+chart_queen = ChartModule([{"Label": "Total Queens",
                       "Color": "Black"}],
                     data_collector_name='datacollector')
 
-chart_drone = ChartModule([{"Label": "percentage of Drones in the population",
+chart_drone = ChartModule([{"Label": "Total Drones",
                       "Color": "Black"}],
                     data_collector_name='datacollector')
 
-chart_fertilized_queens = ChartModule([{"Label": "percentage queens fertilized",
+chart_fertilized_queens = ChartModule([{"Label": "Total Fertilized Queens",
                       "Color": "Black"}],
                     data_collector_name='datacollector')
 
