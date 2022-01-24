@@ -40,7 +40,7 @@ class BeeEvolutionModel(Model):
         self.agents = []
 
         self.setup_hives_and_bees()
-        self.nectar_units = self.get_env_nectar_needed() * 10
+        self.nectar_units = self.get_env_nectar_needed() * 100
         self.setup_flower_patches()
         # self.schedule = RandomActivation(self)
 

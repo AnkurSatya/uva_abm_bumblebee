@@ -376,12 +376,15 @@ class Hive(Agent):
 		self.model.rng.shuffle(bees)
 		for b in bees:
 			# kill drones if they did not find enough food
-			if isinstance(b, Drone) and b.health_level < b.nectar_needed:
-				self.remove_bee(b)
-				self.model.remove_agent(b)
+			if isinstance(b, Drone):
+				if b.health_level < b.nectar_needed:
+					self.remove_bee(b)
+					self.model.remove_agent(b)
 			else:
+				# difference is how much nectar the bee needs to survive
 				difference = b.nectar_needed - b.health_level
-				if 0 < difference < self.nectar_units:
+				# if hive nectar is at least difference, remove difference units form hive nectar
+				if difference <= self.nectar_units:
 					self.nectar_units -= difference
 				else:
 					# not enough stored nectar to feed bee, so it dies
@@ -438,7 +441,9 @@ class Hive(Agent):
 	def step(self):
 		self.timestep_counter += 1
 		if (self.timestep_counter) % self.model.daily_steps == 0:
+			print([(b.health_level==b.nectar_needed) for b in list(self.bees)])
 			self.feed_and_kill_bees()
+			print([(b.health_level==b.nectar_needed) for b in list(self.bees)])
 			self.generate_next_generation()
 			self.bees_to_hive()
 			self.spawn_new_bees()
