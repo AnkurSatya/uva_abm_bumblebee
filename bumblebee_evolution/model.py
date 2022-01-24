@@ -195,13 +195,9 @@ class BeeEvolutionModel(Model):
 
     def get_change_in_bee_population_in_day(self, bee_type):
         if self.step_count % self.daily_steps == 0:
-            pop_previous_day = sum([values[bee_type] for hive_id, values in self.bee_population_by_hive_previous_day.items()])
             pop_today = sum([values[bee_type] for hive_id, values in self.bee_population_by_hive.items()])
-
-            perc_change = 100.0*(pop_today - pop_previous_day)/pop_previous_day
-            return perc_change
-        else:
-            return 0.0
+            dictionary_of_agents = self.bee_population_by_hive.items()
+            return dictionary_of_agents
 
     def get_perc_fertilized_queens_season_end(self):
         if self.n_days_passed == self.N_days:
@@ -211,5 +207,4 @@ class BeeEvolutionModel(Model):
                 fertilized_queens_at_season_end += hive.get_fertilized_queens_count()
 
             return 100.0 * (fertilized_queens_at_season_end/total_queens_at_season_start)
-        else:
-            return 0
+        
