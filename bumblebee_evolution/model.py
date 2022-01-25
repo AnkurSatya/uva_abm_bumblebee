@@ -8,7 +8,7 @@ from agents import *
     
 
 class BeeEvolutionModel(Model):
-    def __init__(self, width, height, num_hives, initial_bees_per_hive, daily_steps, rng, alpha, beta, gamma, N_days):
+    def __init__(self, width, height, num_hives, initial_bees_per_hive, daily_steps, rng, coefficients, N_days):
         """
         Args:
             width (int): width of the grid.
@@ -20,9 +20,7 @@ class BeeEvolutionModel(Model):
         """
         self.running = True
         self.N_days = N_days
-        self.alpha = alpha
-        self.beta = beta
-        self.gamma = gamma
+        self.coefficients = coefficients
         self.height = height
         self.width = width
         self.grid = MultiGrid(width, height, torus=False) # Torus should be false wrapping up the space does not make sense here.
@@ -42,7 +40,7 @@ class BeeEvolutionModel(Model):
         self.agents = []
 
         self.setup_hives_and_bees()
-        self.nectar_units = self.get_env_nectar_needed() * 5 # TODO : adjust this quantity
+        self.nectar_units = self.get_env_nectar_needed() * 10 # TODO : 50 is multiplicative factor for carrying capacity of env w.r.t. initial population sizes
         self.setup_flower_patches()
 
         self.step_count = 0
@@ -74,8 +72,6 @@ class BeeEvolutionModel(Model):
         for _, pos in enumerate(hive_positions):
 
             new_hive = self.create_new_agent(Hive, pos, 0)
-            #new_hive = Hive(i+1, pos, 0)
-
             self.hives.append(new_hive)
 
             # add bees to new hive
@@ -135,9 +131,7 @@ class BeeEvolutionModel(Model):
         
         # Place the agent on the grid
         self.grid.place_agent(agent, agent.pos)
-        # if isinstance(agent,Bee):
-        #     self.schedule.add(agent)
-        
+
         # And add the agent to the model so we can track it
         self.agents.append(agent)
 
@@ -168,7 +162,7 @@ class BeeEvolutionModel(Model):
         agent_list = list(self.agents)
         self.rng.shuffle(agent_list)
         for agent in agent_list:
-            if not isinstance(agent, Hive):
+            if agent.pos and not isinstance(agent, Hive):
                 agent.step()
         for hive in self.hives:
             hive.step()
@@ -195,5 +189,5 @@ class BeeEvolutionModel(Model):
             return count
 
     def get_total_fertilized_queens(self):
-        if self.n_days_passed == self.N_days:
+        if self.step_count % self.daily_steps == 0:
             return sum([h.number_fertilized_queens for h in self.hives])

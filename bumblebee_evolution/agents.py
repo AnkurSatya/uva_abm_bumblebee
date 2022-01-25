@@ -239,6 +239,11 @@ class Queen(Bee):
 
 		# gather cell contents after moving
 		cur_cell_contents = self.model.grid.get_cell_list_contents((int(self.pos[0]), int(self.pos[1])))
+		
+		for item in cur_cell_contents:
+			if isinstance(item, Drone) and item.hive != self.hive:
+				self.mate(item)
+				return
 
 		# did not mate, and we have just executed a random move, or have reached last_resource and need more nectar
 		if self.health_level < self.nectar_needed:
@@ -365,8 +370,7 @@ class Hive(Agent):
 		this method will mutate the agents with health level != nectar_needed,
 		the agents with health != nectar_needed will be killed and generated again in the new_offspring function
 		'''
-		coeffs = {Worker: self.model.alpha, Drone: self.model.beta, Queen: self.model.gamma}
-
+		coeffs = self.model.coefficients
 		for b in list(self.bees):
 			# find the probabilities of choosing each bee type based onencounters
 			agent_probs = {}
@@ -377,7 +381,7 @@ class Hive(Agent):
 				# calculating with encounter numbers instead of proportions
 				# here; probabilities are normalised later, so this approach
 				# is equivalent
-				agent_probs[bee_type] = (coeffs[bee_type]*own_hive + (1-coeffs[bee_type])*other_hive)
+				agent_probs[bee_type] = (1/coeffs[bee_type]) * (coeffs["alpha"]*own_hive + (1-coeffs["alpha"])*other_hive)
 
 			# 1. normalise into probabilities by dividing by sum
 			# 2. make probabilities 'inversely' (loosely speaking) proportional

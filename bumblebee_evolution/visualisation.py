@@ -43,16 +43,27 @@ chart_fertilized_queens = ChartModule([{"Label": "Total Fertilized Queens",
                                         "Color": "Black"}],
                                         data_collector_name='datacollector')
 
+alpha = 0.8
+queen_coeff = 1
+worker_coeff = 5
+drone_coeff = 2
+
+coeffs = {"alpha":alpha, 
+          Queen:queen_coeff,
+          Worker:worker_coeff,
+          Drone:drone_coeff}
+
 server = ModularServer(BeeEvolutionModel,
                        [grid, chart_worker, chart_queen, chart_drone, chart_fertilized_queens],
                        "Model",
-                       {"width":width, "height":height, 
-                       "num_hives":3,
-                       "initial_bees_per_hive":20, 
+                       {"width":width, 
+                       "height":height, 
+                       "num_hives":4,
+                       "initial_bees_per_hive":3, 
                        "daily_steps":100, 
                        "rng": np.random.default_rng(1),
-                       "alpha":1, "beta":1, "gamma":1, 
-                       "N_days":2})
+                       "coefficients":coeffs, 
+                       "N_days":30})
 
 server.port = 8521 # The default
 server.launch()

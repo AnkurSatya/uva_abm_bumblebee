@@ -1,4 +1,5 @@
 from model import BeeEvolutionModel
+from agents import *
 import numpy as np
 
 N_days = 20
@@ -7,17 +8,23 @@ daily_steps = 20
 width = 50
 height = 50
 
-alpha = 1
-beta = 1
-gamma = 1
+alpha = 0.8
+queen_coeff = 1
+worker_coeff = 5
+drone_coeff = 2
 
-num_hives = 2
-initial_bees_per_hive = 50
+coeffs = {"alpha":alpha, 
+          Queen:queen_coeff,
+          Worker:worker_coeff,
+          Drone:drone_coeff}
+
+num_hives = 4
+initial_bees_per_hive = 3
 nectar_units = 10
 
 # Initialisation of the model 
 rng = np.random.default_rng(1)
-model = BeeEvolutionModel(width, height, num_hives, nectar_units, initial_bees_per_hive, daily_steps, rng, alpha, beta, gamma, N_days)
+model = BeeEvolutionModel(width, height, num_hives, nectar_units, initial_bees_per_hive, daily_steps, rng, coeffs, N_days)
 
 # running N days
 model.run_model()
