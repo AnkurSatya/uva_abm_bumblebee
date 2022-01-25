@@ -24,20 +24,22 @@ def agent_portrayal(agent):
         return portrayal[FlowerPatch]
 
 width, height = 25, 25
+num_hives = 4
 
 grid = CanvasGrid(agent_portrayal, width, height, 500, 500)
 
-chart_worker = ChartModule([{"Label": "Total Workers",
-                      "Color": "Black"}],
-                    data_collector_name='datacollector')
+chart_bees = ChartModule([{"Label": "Total Workers", "Color": "Blue"}, 
+                          {"Label": "Total Queens", "Color": "Red"},
+                          {"Label": "Total Drones", "Color": "Yellow"}],
+                         data_collector_name='datacollector')
 
-chart_queen = ChartModule([{"Label": "Total Queens",
-                      "Color": "Black"}],
-                    data_collector_name='datacollector')
-
-chart_drone = ChartModule([{"Label": "Total Drones",
-                            "Color": "Black"}],
-                            data_collector_name='datacollector')
+# charts for individual hives
+hive_charts = []
+for hive_i in range(num_hives):
+    hive_charts.append(ChartModule([{'Label': f'Workers in Hive {hive_i}', 'Color': 'Blue'},
+                                    {'Label': f'Queens in Hive {hive_i}', 'Color': 'Red'},
+                                    {'Label': f'Drones in Hive {hive_i}', 'Color': 'Yellow'}],
+                                   data_collector_name='datacollector'))
 
 chart_fertilized_queens = ChartModule([{"Label": "Total Fertilized Queens",
                                         "Color": "Black"}],
@@ -54,16 +56,16 @@ coeffs = {"alpha":alpha,
           Drone:drone_coeff}
 
 server = ModularServer(BeeEvolutionModel,
-                       [grid, chart_worker, chart_queen, chart_drone, chart_fertilized_queens],
-                       "Model",
+                       [grid, chart_bees, chart_fertilized_queens] + hive_charts,
+                       "Bee Model",
                        {"width":width, 
-                       "height":height, 
-                       "num_hives":4,
-                       "initial_bees_per_hive":3, 
-                       "daily_steps":100, 
-                       "rng": np.random.default_rng(1),
-                       "coefficients":coeffs, 
-                       "N_days":30})
+                        "height":height, 
+                        "num_hives": num_hives,
+                        "initial_bees_per_hive":3, 
+                        "daily_steps":100, 
+                        "rng": np.random.default_rng(1),
+                        "coefficients":coeffs, 
+                        "N_days":30})
 
 server.port = 8521 # The default
 server.launch()

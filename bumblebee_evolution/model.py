@@ -46,14 +46,18 @@ class BeeEvolutionModel(Model):
         self.step_count = 0
         self.n_days_passed = 0
 
-        #Data collection
-        self.datacollector = DataCollector (
-            {"Total Workers": lambda m: m.get_bees_of_each_type(Worker),
-             "Total Queens": lambda m: m.get_bees_of_each_type(Queen),
-             "Total Drones": lambda m: m.get_bees_of_each_type(Drone),
-             "Total Fertilized Queens": lambda m: m.get_total_fertilized_queens()}
-        )
+        # Data collection #
+        model_reporters={"Total Workers": lambda m: m.get_bees_of_each_type(Worker),
+                         "Total Queens": lambda m: m.get_bees_of_each_type(Queen),
+                         "Total Drones": lambda m: m.get_bees_of_each_type(Drone),
+                         "Total Fertilized Queens": lambda m: m.get_total_fertilized_queens()}
 
+        for hive_i, hive in enumerate(self.hives):
+            for bee_type in [Worker, Queen, Drone]:
+                model_reporters[f"{bee_type.__name__}s in Hive {hive_i}"] = (
+                    lambda m, b=bee_type, h=hive: m.get_bees_of_each_type(b, h))
+
+        self.datacollector = DataCollector(model_reporters=model_reporters)
         self.datacollector.collect(self)
 
     def get_initial_bee_type_ratio(self):
@@ -180,13 +184,16 @@ class BeeEvolutionModel(Model):
             for _ in range(self.daily_steps):
                 self.step()
 
-    def get_bees_of_each_type(self, bee_type):
-        if self.step_count % self.daily_steps == 0:
-            count = 0
-            for item in self.agents:
-                if isinstance(item, bee_type):
-                    count += 1
-            return count
+    def get_bees_of_each_type(self, bee_type, hive=None):
+        """
+        Get the number of bees of the given type and optionally hive.
+        """
+        if self.step_count % self.daily_steps != 0:
+            return
+        if hive:
+            return len([bee for bee in hive.bees if isinstance(bee, bee_type)])
+        else:
+            return len([agent for agent in self.agents if isinstance(agent, bee_type)])
 
     def get_total_fertilized_queens(self):
         if self.step_count % self.daily_steps == 0:
