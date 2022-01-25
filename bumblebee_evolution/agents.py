@@ -381,7 +381,7 @@ class Hive(Agent):
 				# calculating with encounter numbers instead of proportions
 				# here; probabilities are normalised later, so this approach
 				# is equivalent
-				agent_probs[bee_type] = (1/coeffs[bee_type]) * (coeffs["alpha"]*own_hive + (1-coeffs["alpha"])*other_hive)
+				agent_probs[bee_type] = coeffs["alpha"]*own_hive + (1-coeffs["alpha"])*other_hive
 
 			# 1. normalise into probabilities by dividing by sum
 			# 2. make probabilities 'inversely' (loosely speaking) proportional
@@ -392,7 +392,11 @@ class Hive(Agent):
 			if prob_sum == 0:
 				return
 
-			agent_probs = {bee_type: (1-(prob/prob_sum))/2 for bee_type, prob in agent_probs.items()}
+			agent_probs = {bee_type: coeffs[bee_type]*(1-(prob/prob_sum))/2 for bee_type, prob in agent_probs.items()}
+
+			# normalise again
+			agent_probs_sum = sum(agent_probs.values())
+			agent_probs = {bee_type: prob/agent_probs_sum for bee_type, prob in agent_probs.items()}
 
 			# add new agent and remove old one
 			new_agent = self.model.create_new_agent(

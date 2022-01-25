@@ -23,8 +23,8 @@ def agent_portrayal(agent):
 
         return portrayal[FlowerPatch]
 
-width, height = 25, 25
-num_hives = 4
+width, height = 30, 30
+num_hives = 3
 
 grid = CanvasGrid(agent_portrayal, width, height, 500, 500)
 
