@@ -47,10 +47,7 @@ class Bee(Agent):
 		'''
 		This method should get the neighbouring cells (Moore's neighbourhood), select one, and move the agent to this cell.
 		'''
-		try:
-			neighbouring_cells = self.model.grid.get_neighborhood(self.pos, moore=True)
-		except:
-			import IPython; IPython.embed()
+		neighbouring_cells = self.model.grid.get_neighborhood(self.pos, moore=True)
 		if self.hive.pos in neighbouring_cells:
 			neighbouring_cells.remove(self.hive.pos)
 
