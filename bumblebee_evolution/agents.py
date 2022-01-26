@@ -308,17 +308,15 @@ class FlowerPatch(Agent):
 
 """Class for the hives"""
 class Hive(Agent):
-	def __init__(self, unique_id, model, pos, nectar_units):
+	def __init__(self, unique_id, model, pos):
 		"""
 		Args:
 			unique_id (int): unique_id for the hive.
 			pos (tuple(int, int)): position of the hive in the environment.
-			nectar_units (float): nectar in the hive at the beginning of model run.
 		"""
 		super().__init__(unique_id, model)
 		self.pos = pos
-		self.max_nectar_units = nectar_units
-		self.nectar_units = nectar_units
+		self.nectar_units = 0
 		self.bees = set()
 		self.timestep_counter = 0
 		self.number_fertilized_queens = 0

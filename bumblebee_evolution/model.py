@@ -76,7 +76,7 @@ class BeeEvolutionModel(Model):
         hive_positions = [tuple(item) for item in self.rng.choice(list(self.grid_locations), size=self.num_hives, replace=False)]
         for _, pos in enumerate(hive_positions):
 
-            new_hive = self.create_new_agent(Hive, pos, 0)
+            new_hive = self.create_new_agent(Hive, pos)
             self.hives.append(new_hive)
 
             # add bees to new hive
