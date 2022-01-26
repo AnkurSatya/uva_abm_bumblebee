@@ -66,12 +66,14 @@ class Bee(Agent):
 		This method should check if the cell is good enough to start collecting food.
 		'''
 		# content of the cell in the current position
-		cell_concents = self.model.grid.get_cell_list_contents((int(self.pos[0]), int(self.pos[1])))
-		flower_patch = [obj for obj in cell_concents if isinstance(obj, FlowerPatch)]
-		if flower_patch and flower_patch[0].nectar_units > threshold:
-			return flower_patch[0]
-		else:
-			return False
+		cell_contents = self.model.grid.get_cell_list_contents((int(self.pos[0]), int(self.pos[1])))
+		for item in cell_contents:
+			if isinstance(item, FlowerPatch):
+				if item.nectar_units > threshold:
+					return item
+				else:
+					return False
+		return False
 
 	def collect(self, flower_patch):
 		'''
@@ -317,7 +319,6 @@ class Hive(Agent):
 		self.pos = pos
 		self.nectar_units = 0
 		self.bees = set()
-		self.timestep_counter = 0
 		self.number_fertilized_queens = 0
 
 	def add_bee(self, bee):
@@ -411,9 +412,7 @@ class Hive(Agent):
 			self.nectar_units = max(0, self.nectar_units - new_agent.nectar_needed)
 
 	def step(self):
-		self.timestep_counter += 1
-		if (self.timestep_counter) % self.model.daily_steps == 0:
-			self.feed_and_kill_bees()
-			self.generate_next_generation()
-			self.bees_to_hive()
-			self.spawn_new_bees()
+		self.feed_and_kill_bees()
+		self.generate_next_generation()
+		self.bees_to_hive()
+		self.spawn_new_bees()

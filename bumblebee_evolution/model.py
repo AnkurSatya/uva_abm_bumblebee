@@ -164,15 +164,15 @@ class BeeEvolutionModel(Model):
         Prevents applying step on new agents by creating a local list.
         '''
         self.step_count += 1
-        agent_list = list(self.agents)
+        agent_list = [*self.agents]
         self.rng.shuffle(agent_list)
         for agent in agent_list:
             if agent.pos and not isinstance(agent, Hive):
                 agent.step()
-        for hive in self.hives:
-            hive.step()
 
         if self.step_count % self.daily_steps == 0:
+            for hive in self.hives:
+                hive.step()
             self.n_days_passed += 1
             self.datacollector.collect(self)
 
