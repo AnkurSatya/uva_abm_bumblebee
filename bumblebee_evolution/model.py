@@ -172,11 +172,11 @@ class BeeEvolutionModel(Model):
                 agent.step()
 
         if self.step_count % self.daily_steps == 0:
-            self.random_move_values = list(self.rng.uniform(0, 1, size=sum([len(h.bees) for h in self.hives])*self.daily_steps))
             for hive in self.hives:
                 hive.step()
             self.n_days_passed += 1
             self.datacollector.collect(self)
+            self.random_move_values = list(self.rng.uniform(0, 1, size=sum([len(h.bees) for h in self.hives])*self.daily_steps))
 
     def run_model(self):
         '''
