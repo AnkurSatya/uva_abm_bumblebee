@@ -14,7 +14,6 @@ class Bee(Agent):
 			nectar_needed (int): nectar needed per day
 		"""
 		super().__init__(unique_id, model)
-
 		self.hive = hive
 		self.pos = pos
 		self.nectar_needed = nectar_needed
@@ -54,8 +53,9 @@ class Bee(Agent):
 		if self.hive.pos in neighbouring_cells:
 			neighbouring_cells.remove(self.hive.pos)
 
-		# selecting new positiom
-		new_pos = self.model.rng.choice(neighbouring_cells)
+		# selecting new position
+		new_pos =  neighbouring_cells[int(self.model.random_move_values.pop()*len(neighbouring_cells))]
+		#new_pos = self.model.rng.choice(neighbouring_cells)
 
 		# moving the agent to the new position
 		self.model.grid.move_agent(self, tuple(new_pos))

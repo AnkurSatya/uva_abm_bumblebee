@@ -41,6 +41,7 @@ class BeeEvolutionModel(Model):
         self.agents = []
 
         self.setup_hives_and_bees()
+        self.random_move_values = list(self.rng.uniform(0, 1, size=sum([len(h.bees) for h in self.hives])*self.daily_steps))
         self.nectar_units = self.get_env_nectar_needed() * 70
         self.setup_flower_patches()
 
@@ -171,6 +172,7 @@ class BeeEvolutionModel(Model):
                 agent.step()
 
         if self.step_count % self.daily_steps == 0:
+            self.random_move_values = list(self.rng.uniform(0, 1, size=sum([len(h.bees) for h in self.hives])*self.daily_steps))
             for hive in self.hives:
                 hive.step()
             self.n_days_passed += 1
@@ -180,7 +182,7 @@ class BeeEvolutionModel(Model):
         '''
         Method that runs the model for a specific amount of steps.
         '''
-        for _ in tqdm(range(self.N_days)):
+        for _ in tqdm(range(self.N_days)): 
             for _ in range(self.daily_steps):
                 self.step()
 
