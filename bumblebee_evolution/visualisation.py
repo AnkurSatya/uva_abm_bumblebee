@@ -45,7 +45,7 @@ chart_fertilized_queens = ChartModule([{"Label": "Total Fertilized Queens",
                                         "Color": "Black"}],
                                         data_collector_name='datacollector')
 
-alpha = 0.8
+alpha = 0.5
 queen_coeff = 1
 worker_coeff = 5
 drone_coeff = 2

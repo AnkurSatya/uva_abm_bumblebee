@@ -5,6 +5,7 @@ from collections import Counter
 from itertools import product
 from mesa import Model
 from agents import *
+from tqdm import tqdm
     
 
 class BeeEvolutionModel(Model):
@@ -40,13 +41,13 @@ class BeeEvolutionModel(Model):
         self.agents = []
 
         self.setup_hives_and_bees()
-        self.nectar_units = self.get_env_nectar_needed() * 10 # TODO : 50 is multiplicative factor for carrying capacity of env w.r.t. initial population sizes
+        self.nectar_units = self.get_env_nectar_needed() * 10 # TODO : 10 is multiplicative factor for carrying capacity of env w.r.t. initial population sizes
         self.setup_flower_patches()
 
         self.step_count = 0
         self.n_days_passed = 0
 
-        # Data collection #
+        # Data collection
         model_reporters={"Total Workers": lambda m: m.get_bees_of_each_type(Worker),
                          "Total Queens": lambda m: m.get_bees_of_each_type(Queen),
                          "Total Drones": lambda m: m.get_bees_of_each_type(Drone),
@@ -179,23 +180,21 @@ class BeeEvolutionModel(Model):
         '''
         Method that runs the model for a specific amount of steps.
         '''
-        for _ in range(self.N_days):
+        for _ in tqdm(range(self.N_days)):
             for _ in range(self.daily_steps):
                 self.step()
-            self.datacollector.collect(self)
-        self.datacollector.collect(self)
 
     def get_bees_of_each_type(self, bee_type, hive=None):
         """
         Get the number of bees of the given type and optionally hive.
         """
-        # if self.step_count % self.daily_steps != 0:
-        #     return
+        if self.step_count % self.daily_steps != 0:
+            return
         if hive:
             return len([bee for bee in hive.bees if isinstance(bee, bee_type)])
         else:
             return len([agent for agent in self.agents if isinstance(agent, bee_type)])
 
     def get_total_fertilized_queens(self):
-        # if self.step_count % self.daily_steps == 0:
-        return sum([h.number_fertilized_queens for h in self.hives])
+        if self.step_count % self.daily_steps == 0:
+            return sum([h.number_fertilized_queens for h in self.hives])

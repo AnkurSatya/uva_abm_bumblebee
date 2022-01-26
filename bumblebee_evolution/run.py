@@ -3,16 +3,16 @@ from agents import *
 import numpy as np
 import matplotlib.pyplot as plt
 
-N_days = 20
-daily_steps = 100
+N_days = 60
+daily_steps = 500
 
 width = 30
 height = 30
 
-alpha = 0.8
+alpha = 0.5
 queen_coeff = 1
-worker_coeff = 5
-drone_coeff = 2
+worker_coeff = 10
+drone_coeff = 5
 
 coeffs = {"alpha":alpha, 
           Queen:queen_coeff,
@@ -21,7 +21,6 @@ coeffs = {"alpha":alpha,
 
 num_hives = 3
 initial_bees_per_hive = 3
-nectar_units = 10
 
 # Initialisation of the model 
 rng = np.random.default_rng(1)
