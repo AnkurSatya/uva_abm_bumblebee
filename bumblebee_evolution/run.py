@@ -31,6 +31,14 @@ model.run_model()
 
 data = model.datacollector.get_model_vars_dataframe()
 print(data)
-plt.plot(data)
-plt.legend()
+
+fig, ax = plt.subplots(nrows=2+num_hives)
+data[['Total Workers', 'Total Queens', 'Total Drones']].plot(ax=ax[0])
+data[['Total Fertilized Queens']].plot(ax=ax[1])
+for i in range(num_hives):
+    data[[f'Workers in Hive {i}', f'Queens in Hive {i}', f'Drones in Hive {i}']].plot(ax=ax[i+2])
+
+for a in ax:
+    a.grid()
+
 plt.show()
