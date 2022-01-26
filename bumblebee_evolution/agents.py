@@ -378,6 +378,7 @@ class Hive(Agent):
 			
 			total_bees_encountered = sum(agent_counts.values())
 			if total_bees_encountered == 0:
+				b.health_level = 0
 				return
 
 			agent_counts = {key:value/total_bees_encountered for key, value in agent_counts.items()}
