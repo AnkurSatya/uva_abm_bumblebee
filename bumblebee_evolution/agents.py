@@ -372,31 +372,29 @@ class Hive(Agent):
 		'''
 		coeffs = self.model.coefficients
 		for b in list(self.bees):
-			# find the probabilities of choosing each bee type based onencounters
-			agent_probs = {}
+			# find the probabilities of choosing each bee type based on encounters
+			agent_counts = {}
 			for bee_type, encounters in b.encounters.items():
-				own_hive = len(encounters['own_hive'])
-				other_hive = len(encounters['other_hive'])
+				agent_counts[(bee_type, "own")] = len(encounters['own_hive'])
+				agent_counts[(bee_type, "other")] = len(encounters['other_hive'])
+			
+			total_bees_encountered = sum(agent_counts.values())
+			if total_bees_encountered == 0:
+				return
 
-				# calculating with encounter numbers instead of proportions
-				# here; probabilities are normalised later, so this approach
-				# is equivalent
-				agent_probs[bee_type] = coeffs["alpha"]*own_hive + (1-coeffs["alpha"])*other_hive
+			agent_counts = {key:value/total_bees_encountered for key, value in agent_counts.items()}
+			agent_probs = {
+				Worker: coeffs[Worker] * agent_counts[(Worker, "own")],
+				Drone : coeffs[Drone]*(1-coeffs["alpha"]*agent_counts[(Drone, "own")] + (1-coeffs["alpha"])*agent_counts[(Queen, "other")]),
+				Queen : coeffs[Queen]*(1-coeffs["alpha"]*agent_counts[(Queen, "own")] + (1-coeffs["alpha"])*agent_counts[(Drone, "other")])
+			}
 
 			# 1. normalise into probabilities by dividing by sum
 			# 2. make probabilities 'inversely' (loosely speaking) proportional
 			#    to the original ones by substracting from 1 and dividing by
 			#    2 to make sure they again add up to 1
 			prob_sum = sum(agent_probs.values())
-			# there were no encounters, so avoid mutating
-			if prob_sum == 0:
-				return
-
-			agent_probs = {bee_type: coeffs[bee_type]*(1-(prob/prob_sum))/2 for bee_type, prob in agent_probs.items()}
-
-			# normalise again
-			agent_probs_sum = sum(agent_probs.values())
-			agent_probs = {bee_type: prob/agent_probs_sum for bee_type, prob in agent_probs.items()}
+			agent_probs = {bee_type: prob/prob_sum for bee_type, prob in agent_probs.items()}
 
 			# add new agent and remove old one
 			new_agent = self.model.create_new_agent(
