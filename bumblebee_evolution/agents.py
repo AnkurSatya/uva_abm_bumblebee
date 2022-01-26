@@ -82,13 +82,14 @@ class Bee(Agent):
 	def move_towards_hive(self):
 		difference =  np.array(self.hive.pos) - np.array(self.pos)
 		self.model.grid.move_agent(self, (self.pos[0]+np.sign(difference[0]), self.pos[1]+np.sign(difference[1])))
-		if self.pos != self.hive.pos: # TODO : shouldn't count the hive members, right?
+		if self.pos not in [h.pos for h in self.model.hives]:
 			self.update_encounters()
 
 	def move_towards_resource(self):
 		difference =  np.array(self.last_resource) - np.array(self.pos)
 		self.model.grid.move_agent(self, (self.pos[0] + np.sign(difference[0]), self.pos[1] + np.sign(difference[1])))
-		self.update_encounters()
+		if self.pos not in [h.pos for h in self.model.hives]:
+			self.update_encounters()
 
 
 class Worker(Bee):

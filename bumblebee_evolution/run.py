@@ -3,7 +3,7 @@ from agents import *
 import numpy as np
 import matplotlib.pyplot as plt
 
-N_days = 60
+N_days = 30
 daily_steps = 500
 
 width = 30
