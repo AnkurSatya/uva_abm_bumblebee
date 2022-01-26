@@ -106,7 +106,6 @@ class Worker(Bee):
 			nectar_needed (int): amount of nectar needed per day
 		"""
 		super().__init__(unique_id, model, pos, hive, nectar_needed)
-
 		self.max_nectar = 44  # bumble bees carry average of ~25% their body weight, which is 150-200mg, so about 44mg
 		self.stored_nectar = 0
 		self.bee_type = Worker
@@ -166,7 +165,6 @@ class Drone(Bee):
 			nectar_needed (int): amount of nectar needed per day.
 		"""
 		super().__init__(unique_id, model, pos, hive, nectar_needed)
-
 		self.bee_type = Drone
 
 	def step(self):
@@ -271,25 +269,7 @@ class FlowerPatch(Agent):
 		self.pos = pos
 		self.max_nectar_units = nectar_units
 		self.nectar_units = nectar_units
-
-		#represents how many times the 'pos' of this flower patch was sampled during the setting up of the environment.
-		self.flower_patch_size = 1
-		self.base_replenishing_quantity = self.max_nectar_units / self.model.daily_steps
-
-		# This should be proportional to the initial nectar quantity of the flower patch because 
-		# different flower patch may have different initial quantity due to the way the flower 
-		# patches are set up. So, a flower patch having a greater initial nectar units represent
-		# a bigger plant. Hence, the replenishing quantity per time step should be greater.
-		self.replenishing_quantity = self.base_replenishing_quantity
-
-	def update_flower_patch(self, more_nectar):
-		"""
-		Increases the size of the flower patch by an amount given by more_nectar
-		"""
-		self.flower_patch_size +=1 
-		self.nectar_units += more_nectar
-		self.max_nectar_units += more_nectar
-		self.replenishing_quantity = self.base_replenishing_quantity * self.flower_patch_size
+		self.replenishing_quantity = self.max_nectar_units / self.model.daily_steps
 
 	def withdraw_nectar(self, nectar_drawn):
 		"""
@@ -297,7 +277,7 @@ class FlowerPatch(Agent):
 		Args:
 			nectar_drawn (float): nectar withdrawn by a bee.
 		"""
-		self.nectar_units = max(0, self.nectar_units-nectar_drawn)
+		self.nectar_units -= nectar_drawn
 
 	def step(self):
 		"""
@@ -338,7 +318,7 @@ class Hive(Agent):
 		self.bees.discard(bee)
 
 	def bees_to_hive(self):
-		for b in list(self.bees):
+		for b in self.bees:
 			if not isinstance(b, Drone):
 				self.model.grid.move_agent(b, self.pos)
 
