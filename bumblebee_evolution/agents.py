@@ -52,7 +52,7 @@ class Bee(Agent):
 			neighbouring_cells.remove(self.hive.pos)
 
 		# selecting new positiom
-		new_pos = self.model.rng.choice(self.model.grid.get_neighborhood(self.pos, moore=True))
+		new_pos = self.model.rng.choice(neighbouring_cells)
 
 		# moving the agent to the new position
 		self.model.grid.move_agent(self, tuple(new_pos))
