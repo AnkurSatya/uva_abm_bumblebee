@@ -41,7 +41,7 @@ class BeeEvolutionModel(Model):
         self.agents = []
 
         self.setup_hives_and_bees()
-        self.nectar_units = self.get_env_nectar_needed() * 10 # TODO : 10 is multiplicative factor for carrying capacity of env w.r.t. initial population sizes
+        self.nectar_units = self.get_env_nectar_needed() * 70
         self.setup_flower_patches()
 
         self.step_count = 0

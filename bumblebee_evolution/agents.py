@@ -28,6 +28,9 @@ class Bee(Agent):
 		}
 
 	def update_encounters(self):
+		other_hive_positions = [h.pos for h in self.model.hives if h != self.hive]
+		if self.pos in other_hive_positions:
+			return
 		# self.pos contains int64 objects which mesa doesn't like, so we need to cast to int *sigh*
 		cell_contents = self.model.grid.get_cell_list_contents((int(self.pos[0]), int(self.pos[1])))
 		cell_contents.remove(self)
@@ -82,14 +85,12 @@ class Bee(Agent):
 	def move_towards_hive(self):
 		difference =  np.array(self.hive.pos) - np.array(self.pos)
 		self.model.grid.move_agent(self, (self.pos[0]+np.sign(difference[0]), self.pos[1]+np.sign(difference[1])))
-		if self.pos not in [h.pos for h in self.model.hives]:
-			self.update_encounters()
+		self.update_encounters()
 
 	def move_towards_resource(self):
 		difference =  np.array(self.last_resource) - np.array(self.pos)
 		self.model.grid.move_agent(self, (self.pos[0] + np.sign(difference[0]), self.pos[1] + np.sign(difference[1])))
-		if self.pos not in [h.pos for h in self.model.hives]:
-			self.update_encounters()
+		self.update_encounters()
 
 
 class Worker(Bee):
