@@ -7,10 +7,11 @@ from itertools import product
 from mesa import Model
 from tqdm import tqdm
 from agents import *
-    
+
 
 class BeeEvolutionModel(Model):
-    def __init__(self, alpha, forager_royal_ratio, growth_factor, width=30, height=30, num_hives=3, initial_bees_per_hive=3, daily_steps=500, rng=np.random.default_rng(1), N_days=30):
+    def __init__(self, alpha, forager_royal_ratio, growth_factor, seed, width=30, height=30, num_hives=3,
+                 initial_bees_per_hive=3, daily_steps=500, N_days=30):
         """
         Args:
             width (int): width of the grid.
@@ -26,7 +27,7 @@ class BeeEvolutionModel(Model):
         self.parameters = {"alpha":alpha,
                            "forager_royal_ratio":forager_royal_ratio,
                            "growth_factor":growth_factor}
-        self.rng = rng
+        self.rng = np.random.default_rng(seed)
         self.resource_variability = self.rng.uniform(0, 0.5)
         self.height = height
         self.width = width
@@ -67,7 +68,7 @@ class BeeEvolutionModel(Model):
                     lambda m, b=bee_type, h=hive: m.get_bees_of_each_type(b, h))
 
         self.datacollector = DataCollector(model_reporters=model_reporters)
-        self.datacollector.collect(self)
+        #self.datacollector.collect(self)
 
     def setup_hives_and_bees(self):
         """
@@ -157,10 +158,12 @@ class BeeEvolutionModel(Model):
                     self.remove_agent(agent)
             self.setup_flower_patches()
             self.schedule_hives.step()
+            #self.datacollector.collect(self)
             self.random_move_values = list(self.rng.uniform(0, 1, size=sum([len(h.bees) for h in self.hives])*self.daily_steps))
-            self.datacollector.collect(self)
-            print(f"finished a day... params : {self.parameters}, step count {self.step_count}")
+            
+            #print(f"finished a day... params : {self.parameters}, step count {self.step_count}")
             if self.step_count == self.N_days*self.daily_steps:
+                self.datacollector.collect(self)
                 self.running = False
                 return
 
