@@ -55,7 +55,6 @@ class Bee(Agent):
 
 		# selecting new position
 		new_pos =  neighbouring_cells[int(self.model.random_move_values.pop()*len(neighbouring_cells))]
-		#new_pos = self.model.rng.choice(neighbouring_cells)
 
 		# moving the agent to the new position
 		self.model.grid.move_agent(self, tuple(new_pos))
@@ -363,7 +362,7 @@ class Hive(Agent):
 
 			agent_counts = {key:value/total_bees_encountered for key, value in agent_counts.items()}
 			agent_probs = {
-				Worker: coeffs[Worker] * agent_counts[(Worker, "own")],
+				Worker: coeffs[Worker]*(1-coeffs["alpha"]*agent_counts[(Worker, "own")] + (1-coeffs["alpha"])*agent_counts[(Worker, "other")]),
 				Drone : coeffs[Drone]*(1-coeffs["alpha"]*agent_counts[(Drone, "own")] + (1-coeffs["alpha"])*agent_counts[(Queen, "other")]),
 				Queen : coeffs[Queen]*(1-coeffs["alpha"]*agent_counts[(Queen, "own")] + (1-coeffs["alpha"])*agent_counts[(Drone, "other")])
 			}
