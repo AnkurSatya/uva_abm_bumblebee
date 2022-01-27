@@ -60,7 +60,7 @@ class Bee(Agent):
 		self.model.grid.move_agent(self, tuple(new_pos))
 		self.update_encounters()
 
-	def check_cell_for_nectar(self, threshold=10): # TODO : update threshold value?
+	def check_cell_for_nectar(self, threshold=0): # TODO : update threshold value?
 		'''
 		This method should check if the cell is good enough to start collecting food.
 		'''

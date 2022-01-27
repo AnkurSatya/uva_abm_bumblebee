@@ -10,7 +10,7 @@ from agents import *
     
 
 class BeeEvolutionModel(Model):
-    def __init__(self, alpha, forager_royal_ratio, growth_factor, width=30, height=30, num_hives=3, initial_bees_per_hive=3, daily_steps=500, rng=np.random.default_rng(1), N_days=20):
+    def __init__(self, alpha, forager_royal_ratio, growth_factor, width=30, height=30, num_hives=3, initial_bees_per_hive=3, daily_steps=500, rng=np.random.default_rng(1), N_days=30):
         """
         Args:
             width (int): width of the grid.
@@ -159,7 +159,11 @@ class BeeEvolutionModel(Model):
             self.schedule_hives.step()
             self.random_move_values = list(self.rng.uniform(0, 1, size=sum([len(h.bees) for h in self.hives])*self.daily_steps))
             self.datacollector.collect(self)
-            print(f"finished a day... params : {self.parameters}")
+            print(f"finished a day... params : {self.parameters}, step count {self.step_count}")
+            if self.step_count == self.N_days*self.daily_steps:
+                self.running = False
+                return
+
 
     def run_model(self):
         '''
