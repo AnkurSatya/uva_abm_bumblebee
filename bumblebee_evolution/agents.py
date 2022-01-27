@@ -347,7 +347,7 @@ class Hive(Agent):
 		this method will mutate the agents with health level != nectar_needed,
 		the agents with health != nectar_needed will be killed and generated again in the new_offspring function
 		'''
-		coeffs = self.model.coefficients
+		coeffs = self.model.parameters
 		for b in list(self.bees):
 			# find the probabilities of choosing each bee type based on encounters
 			agent_counts = {}
@@ -362,9 +362,9 @@ class Hive(Agent):
 
 			agent_counts = {key:value/total_bees_encountered for key, value in agent_counts.items()}
 			agent_probs = {
-				Worker: coeffs[Worker]*(1-coeffs["alpha"]*agent_counts[(Worker, "own")] + (1-coeffs["alpha"])*agent_counts[(Worker, "other")]),
-				Drone : coeffs[Drone]*(1-coeffs["alpha"]*agent_counts[(Drone, "own")] + (1-coeffs["alpha"])*agent_counts[(Queen, "other")]),
-				Queen : coeffs[Queen]*(1-coeffs["alpha"]*agent_counts[(Queen, "own")] + (1-coeffs["alpha"])*agent_counts[(Drone, "other")])
+				Worker: coeffs["forager_royal_ratio"]*(1-coeffs["alpha"]*agent_counts[(Worker, "own")] + (1-coeffs["alpha"])*agent_counts[(Worker, "other")]),
+				Drone : ((1-coeffs["forager_royal_ratio"])/2)*(1-coeffs["alpha"]*agent_counts[(Drone, "own")] + (1-coeffs["alpha"])*agent_counts[(Queen, "other")]),
+				Queen : ((1-coeffs["forager_royal_ratio"])/2)*(1-coeffs["alpha"]*agent_counts[(Queen, "own")] + (1-coeffs["alpha"])*agent_counts[(Drone, "other")])
 			}
 
 			# 1. normalise into probabilities by dividing by sum
@@ -385,10 +385,12 @@ class Hive(Agent):
 			b.hive.remove_bee(b)
 
 	def spawn_new_bees(self):
-		while self.nectar_units > 0:
+		allocated_growth_nectar = self.nectar_units*self.model.parameters["growth_factor"]
+		while allocated_growth_nectar > 0:
 			new_agent = self.model.create_new_agent(
 				self.model.rng.choice([Worker, Drone, Queen]), self.pos, self)
 			self.add_bee(new_agent)
+			allocated_growth_nectar -= new_agent.nectar_needed
 			self.nectar_units = max(0, self.nectar_units - new_agent.nectar_needed)
 
 	def step(self):

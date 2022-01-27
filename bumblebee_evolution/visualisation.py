@@ -47,14 +47,15 @@ chart_fertilized_queens = ChartModule([{"Label": "Total Fertilized Queens",
                                         data_collector_name='datacollector')
 
 alpha = 0.5
-queen_coeff = 0.1
-worker_coeff = 0.7
+forager_royal_ratio = 0.5
+growth_factor = 0.5
 
 server = ModularServer(BeeEvolutionModel,
-                       [grid, chart_bees, chart_fertilized_queens] + hive_charts,
+                       [grid],#, chart_bees, chart_fertilized_queens] + hive_charts,
                        "Bee Model",
                        {"alpha":alpha,
-                        "queen_coeff":queen_coeff,
-                        "worker_coeff":worker_coeff})
+                        "forager_royal_ratio":forager_royal_ratio,
+                        "growth_factor":growth_factor})
+
 server.port = 8521 # The default
 server.launch()

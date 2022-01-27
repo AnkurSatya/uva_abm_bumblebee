@@ -1,14 +1,9 @@
 from model import BeeEvolutionModel
-from agents import *
 import matplotlib.pyplot as plt
+from agents import *
 
-alpha = 0.5
-queen_coeff = 0.1
-worker_coeff = 0.7
-
-model = BeeEvolutionModel(alpha, queen_coeff, worker_coeff)
+model = BeeEvolutionModel(alpha = 0.5, forager_royal_ratio = 0.5, growth_factor = 0.5)
 model.run_model()
-
 data = model.datacollector.get_model_vars_dataframe()
 print(data)
 
@@ -19,5 +14,4 @@ for i in range(model.num_hives):
     data[[f'Workers in Hive {i}', f'Queens in Hive {i}', f'Drones in Hive {i}']].plot(ax=ax[i+2])
 for a in ax:
     a.grid()
-
 plt.show()

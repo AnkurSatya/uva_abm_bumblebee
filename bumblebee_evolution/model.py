@@ -10,7 +10,7 @@ from agents import *
     
 
 class BeeEvolutionModel(Model):
-    def __init__(self, alpha, queen_coeff, worker_coeff, width=30, height=30, num_hives=3, initial_bees_per_hive=3, daily_steps=500, rng=np.random.default_rng(1), N_days=20):
+    def __init__(self, alpha, forager_royal_ratio, growth_factor, width=30, height=30, num_hives=3, initial_bees_per_hive=3, daily_steps=500, rng=np.random.default_rng(1), N_days=20):
         """
         Args:
             width (int): width of the grid.
@@ -23,17 +23,20 @@ class BeeEvolutionModel(Model):
         self.N_days = N_days
         self.daily_steps = daily_steps
         self.step_count = 0
-        self.coefficients = {"alpha":alpha,
-                             Queen:queen_coeff,
-                             Worker:worker_coeff,
-                             Drone:1-queen_coeff-worker_coeff}
+        self.parameters = {"alpha":alpha,
+                           "forager_royal_ratio":forager_royal_ratio,
+                           "growth_factor":growth_factor}
+        self.rng = rng
+        self.resource_variability = self.rng.uniform(0, 0.5)
         self.height = height
         self.width = width
         self.grid = MultiGrid(width, height, torus=False) # Torus should be false wrapping up the space does not make sense here.
-        self.rng = rng
         self.grid_locations = set(product(range(self.height), range(self.width)))
         self.current_id = 0
         self.num_hives = num_hives
+
+        # TODO : this may be needed by the batch runner, but we don't need to do anything with it, it just counts steps?
+        self.schedule = BaseScheduler(self) 
 
         # create schedules
         self.schedule_bees_and_flower_patches = RandomActivation(self)
@@ -48,7 +51,7 @@ class BeeEvolutionModel(Model):
         self.random_move_values = list(self.rng.uniform(0, 1, size=sum([len(h.bees) for h in self.hives])*self.daily_steps))
 
         # set up flower patches
-        self.nectar_units = self.get_env_nectar_needed() * 70
+        self.mean_nectar_units = self.get_env_nectar_needed() * 70
         self.setup_flower_patches()
 
         # data collection
@@ -103,7 +106,8 @@ class BeeEvolutionModel(Model):
 
         # number of desired flower patches
         num_flower_patches = self.height*self.width - len(hives_pos)
-        nectar_for_one_patch = self.nectar_units/num_flower_patches
+        nectar = self.rng.normal(self.mean_nectar_units, self.resource_variability*self.mean_nectar_units)
+        nectar_for_one_patch = nectar/num_flower_patches
 
         # dictionary of flower patches and nectar quantities
         patch_choices = [tuple(x) for x in self.rng.choice(possible_flower_patch_locations, size=num_flower_patches, replace=True)]
@@ -147,9 +151,15 @@ class BeeEvolutionModel(Model):
         self.schedule_bees_and_flower_patches.step()
         
         if self.step_count % self.daily_steps == 0:
+            # create new flower patches
+            for agent in self.schedule_bees_and_flower_patches.agents:
+                if isinstance(agent, FlowerPatch):
+                    self.remove_agent(agent)
+            self.setup_flower_patches()
             self.schedule_hives.step()
             self.random_move_values = list(self.rng.uniform(0, 1, size=sum([len(h.bees) for h in self.hives])*self.daily_steps))
             self.datacollector.collect(self)
+            print(f"finished a day... params : {self.parameters}")
 
     def run_model(self):
         '''
