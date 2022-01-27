@@ -1,6 +1,7 @@
 ## Class for the Bee evolution model.
 from mesa.datacollection import DataCollector
 from mesa.space import MultiGrid
+from mesa.time import RandomActivation
 from collections import Counter
 from itertools import product
 from mesa import Model
@@ -9,7 +10,7 @@ from tqdm import tqdm
     
 
 class BeeEvolutionModel(Model):
-    def __init__(self, width, height, num_hives, initial_bees_per_hive, daily_steps, rng, coefficients, N_days):
+    def __init__(self, alpha, queen_coeff, worker_coeff, width = 30, height= 30, num_hives = 3, initial_bees_per_hive = 3, daily_steps = 500, rng = np.random.default_rng(1), N_days = 20):
         """
         Args:
             width (int): width of the grid.
@@ -21,7 +22,10 @@ class BeeEvolutionModel(Model):
         """
         self.running = True
         self.N_days = N_days
-        self.coefficients = coefficients
+        self.coefficients = {"alpha":alpha, 
+                            Queen:queen_coeff,
+                            Worker:worker_coeff,
+                            Drone:1-queen_coeff-worker_coeff}
         self.height = height
         self.width = width
         self.grid = MultiGrid(width, height, torus=False) # Torus should be false wrapping up the space does not make sense here.
@@ -29,6 +33,12 @@ class BeeEvolutionModel(Model):
         self.grid_locations = set(product(range(self.height), range(self.width)))
         
         self.num_hives = num_hives
+        # Adding the schedules
+        self.schedule_Worker = RandomActivation(self)
+        self.schedule_Queen = RandomActivation(self)
+        self.schedule_Drone = RandomActivation(self)
+        self.schedule_FlowerPatch = RandomActivation(self)
+        self.schedule_Hive = RandomActivation(self)
 
         self.initial_bees_per_hive = initial_bees_per_hive
         self.initial_bee_type_ratio = self.get_initial_bee_type_ratio()
@@ -36,7 +46,6 @@ class BeeEvolutionModel(Model):
         self.daily_steps = daily_steps
 
         self.hives = []
-        self.flower_patches = []
         self.n_agents = 0
         self.agents = []
 
@@ -47,11 +56,10 @@ class BeeEvolutionModel(Model):
 
         self.step_count = 0
         self.n_days_passed = 0
-
         # Data collection
-        model_reporters={"Total Workers": lambda m: m.get_bees_of_each_type(Worker),
-                         "Total Queens": lambda m: m.get_bees_of_each_type(Queen),
-                         "Total Drones": lambda m: m.get_bees_of_each_type(Drone),
+        model_reporters={"Total Workers": lambda m: self.schedule_Worker.get_agent_count(),
+                         "Total Queens": lambda m: self.schedule_Queen.get_agent_count(),
+                         "Total Drones": lambda m: self.schedule_Drone.get_agent_count(),
                          "Total Fertilized Queens": lambda m: m.get_total_fertilized_queens()}
 
         for hive_i, hive in enumerate(self.hives):
@@ -116,15 +124,8 @@ class BeeEvolutionModel(Model):
         # create FlowerPatch agents
         for pos, count in flower_patches.items():
             self.create_new_agent(FlowerPatch, pos, nectar_for_one_patch*count)
-
-    # This function is incorrect because of two reasons:
-    # 1. If we want to create a new bee type agent, we need to pass more agruments to this function as needed by
-    #    Bee(). 
-    # 2. This function can't be used for all type of bee agents since they have different arguments requirement.
-    # 3. Since this obviously can't be used for creating flower_patch agents, its name should be changed.
-
-    # ToDo: Fix this function and wherever it is being referred to.
-    # STATUS: Fixed now.
+            
+            
     def create_new_agent(self, *argv):
         '''
         Method that enables us to add agents of a given type.
@@ -134,12 +135,15 @@ class BeeEvolutionModel(Model):
         # Create a new agent of the given type
         agent_type = argv[0]
         agent = agent_type(self.n_agents, self, *argv[1:])
+        getattr(self, f'schedule_{agent_type.__name__}').add(agent)
         
         # Place the agent on the grid
         self.grid.place_agent(agent, agent.pos)
+        print(agent, agent.pos)
 
         # And add the agent to the model so we can track it
-        self.agents.append(agent)
+        # TODO: uncommenting te line below gives problem with the scheduler, looks like the bee 582 was already added to the scheduler for some reasons 
+        # self.agents.append(agent)
 
         return agent
 
@@ -150,14 +154,15 @@ class BeeEvolutionModel(Model):
         self.n_agents -= 1
 
         # Remove agent from the hive if agent is a bee
-        if isinstance(agent, Bee):
+        if not isinstance(agent,Hive):
             agent.hive.remove_bee(agent)
+
+        getattr(self, f'schedule_{agent.bee_type.__name__}').remove(agent)
         
         # Remove agent from grid
         self.grid.remove_agent(agent)
 
         # Remove agent from model
-        self.agents.remove(agent)
 
     def step(self):
         '''
@@ -165,18 +170,17 @@ class BeeEvolutionModel(Model):
         Prevents applying step on new agents by creating a local list.
         '''
         self.step_count += 1
-        agent_list = [*self.agents]
-        self.rng.shuffle(agent_list)
-        for agent in agent_list:
-            if agent.pos and not isinstance(agent, Hive):
-                agent.step()
 
+        self.schedule_Worker.step()
+        self.schedule_Queen.step()
+        self.schedule_Drone.step()
+        self.schedule_FlowerPatch.step()
+        
         if self.step_count % self.daily_steps == 0:
-            for hive in self.hives:
-                hive.step()
+            self.schedule_Hive.step()
             self.n_days_passed += 1
-            self.datacollector.collect(self)
             self.random_move_values = list(self.rng.uniform(0, 1, size=sum([len(h.bees) for h in self.hives])*self.daily_steps))
+            self.datacollector.collect(self)
 
     def run_model(self):
         '''
