@@ -107,7 +107,7 @@ class Worker(Bee):
 		self.max_nectar = 44  # bumble bees carry average of ~25% their body weight, which is 150-200mg, so about 44mg
 		self.stored_nectar = 0
 		self.bee_type = Worker
-	
+
 	def drop_nectar(self):
 		'''
 		This method should drop the nectar in the hive.
