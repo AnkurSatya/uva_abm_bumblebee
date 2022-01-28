@@ -1,4 +1,3 @@
-from environment import *
 from mesa import Agent
 import numpy as np
 
