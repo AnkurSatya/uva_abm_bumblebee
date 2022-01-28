@@ -20,39 +20,43 @@ def agent_portrayal(agent):
             portrayal[FlowerPatch]["Color"] = "White"
         else:
             portrayal[FlowerPatch]["Color"] = "Green"
-
         return portrayal[FlowerPatch]
 
-width, height = 25, 25
+width = height = 25
+num_hives = 3
 
 grid = CanvasGrid(agent_portrayal, width, height, 500, 500)
 
-chart_worker = ChartModule([{"Label": "Percentage of Workers",
-                      "Color": "Black"}],
-                    data_collector_name='datacollector')
+# chart for total bees
+chart_bees = ChartModule([{"Label": "Total Workers", "Color": "Blue"}, 
+                          {"Label": "Total Queens", "Color": "Red"},
+                          {"Label": "Total Drones", "Color": "Yellow"}],
+                          data_collector_name='datacollector')
 
-chart_queen = ChartModule([{"Label": "Percentage of Queens",
-                      "Color": "Black"}],
-                    data_collector_name='datacollector')
+# charts for individual hives
+hive_charts = []
+for hive_i in range(num_hives):
+    hive_charts.append(ChartModule([{'Label': f'Workers in Hive {hive_i}', 'Color': 'Blue'},
+                                    {'Label': f'Queens in Hive {hive_i}', 'Color': 'Red'},
+                                    {'Label': f'Drones in Hive {hive_i}', 'Color': 'Yellow'}],
+                                    data_collector_name='datacollector'))
 
-chart_drone = ChartModule([{"Label": "Percentage of Drones",
-                            "Color": "Black"}],
-                            data_collector_name='datacollector')
-
+# chart for fertilized queens
 chart_fertilized_queens = ChartModule([{"Label": "Total Fertilized Queens",
                                         "Color": "Black"}],
                                         data_collector_name='datacollector')
 
+alpha = 0.5
+forager_royal_ratio = 0.5
+growth_factor = 0.5
+
 server = ModularServer(BeeEvolutionModel,
-                       [grid, chart_worker, chart_queen, chart_drone],
-                       "Model",
-                       {"width":width, "height":height, 
-                       "num_hives":3,
-                       "initial_bees_per_hive":20, 
-                       "daily_steps":100, 
-                       "rng": np.random.default_rng(1),
-                       "alpha":1, "beta":1, "gamma":1, 
-                       "N_days":2})
+                       [grid],#, chart_bees, chart_fertilized_queens] + hive_charts,
+                       "Bee Model",
+                       {"alpha":alpha,
+                        "forager_royal_ratio":forager_royal_ratio,
+                        "growth_factor":growth_factor,
+                        "seed":1})
 
 server.port = 8521 # The default
 server.launch()

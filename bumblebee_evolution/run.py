@@ -1,33 +1,17 @@
 from model import BeeEvolutionModel
-import numpy as np
 import matplotlib.pyplot as plt
-import time
+from agents import *
 
-N_days = 10
-daily_steps = 1000
-
-width = 50
-height = 50
-
-alpha = 0.8
-beta = 0.2
-gamma = 0.2
-
-num_hives = 4
-initial_bees_per_hive = 50
-nectar_units = 10
-
-# Initialisation of the model 
-rng = np.random.default_rng(1)
-model = BeeEvolutionModel(width, height, num_hives, initial_bees_per_hive, daily_steps, rng, alpha, beta, gamma, N_days)
-
-# running N days
-start = time.time()
+model = BeeEvolutionModel(alpha = 0.5, forager_royal_ratio = 0.5, growth_factor = 0.5)
 model.run_model()
-end = time.time()
-print((end-start)/60)
 data = model.datacollector.get_model_vars_dataframe()
 print(data)
-'''plt.plot(data)
-plt.legend()
-plt.show()'''
+
+fig, ax = plt.subplots(nrows=2+model.num_hives)
+data[['Total Workers', 'Total Queens', 'Total Drones']].plot(ax=ax[0])
+data[['Total Fertilized Queens']].plot(ax=ax[1])
+for i in range(model.num_hives):
+    data[[f'Workers in Hive {i}', f'Queens in Hive {i}', f'Drones in Hive {i}']].plot(ax=ax[i+2])
+for a in ax:
+    a.grid()
+plt.show()
