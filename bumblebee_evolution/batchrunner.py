@@ -401,7 +401,8 @@ class BatchRunner(FixedBatchRunner):
         else:
             super().__init__(
                 model_cls,
-                ParameterProduct(variable_parameters),
+                #ParameterProduct(variable_parameters),
+                variable_parameters,
                 fixed_parameters,
                 iterations,
                 max_steps,

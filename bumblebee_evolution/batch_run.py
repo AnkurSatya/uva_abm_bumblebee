@@ -14,18 +14,31 @@ seed = int(args.seed)
 problem = {
     'num_vars': 3,
     'names': ['alpha', 'forager_royal_ratio', 'growth_factor'],
-    'bounds': [[0.5, 1.0], [0.0, 1.0], [0.0, 1.0]]
+    'bounds': [[0.0, 1.0], [0.0, 1.0], [0.0, 1.0]]
 }
 
 # Set the repetitions, the amount of steps, and the amount of distinct values per variable
 replicates = 1
-distinct_samples = 500
+distinct_samples = 512
 
 # We get all our samples here
 param_values = saltelli.sample(problem, distinct_samples)
-variable_parameters = {"alpha":list(set([row[0] for row in param_values])),
-					   "forager_royal_ratio":list(set([row[1] for row in param_values])),
-					   "growth_factor":list(set([row[2] for row in param_values]))}
+
+tuples = set()
+for i in range(len(param_values)):
+	tuples.add(tuple(param_values[i]))
+print(f"Running {replicates} replicate(s) for {len(tuples)} unique parameter combinations")
+
+variable_parameters = [
+	{"alpha":param_values[i][0], 
+	 "forager_royal_ratio":param_values[i][1], 
+	 "growth_factor":param_values[i][2]}
+	 for i in range(len(param_values))
+]
+
+# variable_parameters = {"alpha":list(set([row[0] for row in param_values])),
+# 					   "forager_royal_ratio":list(set([row[1] for row in param_values])),
+# 					   "growth_factor":list(set([row[2] for row in param_values]))}
 
 batch = BatchRunnerMP(BeeEvolutionModel,
 					  fixed_parameters={"seed":seed},

@@ -10,8 +10,10 @@ from agents import *
 
 
 class BeeEvolutionModel(Model):
-    def __init__(self, alpha, forager_royal_ratio, growth_factor, seed, width=30, height=30, num_hives=3,
-                 initial_bees_per_hive=3, daily_steps=500, N_days=30):
+    def __init__(self, alpha, forager_royal_ratio, growth_factor, 
+                 seed, width=25, height=25, num_hives=3,
+                 initial_bees_per_hive=3,
+                 daily_steps=400, N_days=30):
         """
         Args:
             width (int): width of the grid.
@@ -47,12 +49,13 @@ class BeeEvolutionModel(Model):
         self.initial_bees_per_hive = initial_bees_per_hive
         self.initial_bee_type_ratio = {Drone:1/3, Worker:1/3, Queen:1/3}
         self.hives = self.setup_hives_and_bees()
+        self.hive_positions = [h.pos for h in self.hives]
 
         # create list of random moves for speed up
         self.random_move_values = list(self.rng.uniform(0, 1, size=sum([len(h.bees) for h in self.hives])*self.daily_steps))
 
         # set up flower patches
-        self.mean_nectar_units = self.get_env_nectar_needed() * 70
+        self.mean_nectar_units = self.get_env_nectar_needed() * 50
         self.setup_flower_patches()
 
         # data collection

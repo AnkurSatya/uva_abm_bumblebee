@@ -27,8 +27,7 @@ class Bee(Agent):
 		}
 
 	def update_encounters(self):
-		other_hive_positions = [h.pos for h in self.model.hives if h != self.hive]
-		if self.pos in other_hive_positions:
+		if self.pos in self.model.hive_positions:
 			return
 		# self.pos contains int64 objects which mesa doesn't like, so we need to cast to int *sigh*
 		cell_contents = self.model.grid.get_cell_list_contents((int(self.pos[0]), int(self.pos[1])))
@@ -237,7 +236,6 @@ class Queen(Bee):
 
 		# gather cell contents after moving
 		cur_cell_contents = self.model.grid.get_cell_list_contents((int(self.pos[0]), int(self.pos[1])))
-		
 		for item in cur_cell_contents:
 			if isinstance(item, Drone) and item.hive != self.hive:
 				self.mate(item)

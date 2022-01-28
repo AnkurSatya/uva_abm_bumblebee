@@ -22,7 +22,7 @@ def agent_portrayal(agent):
             portrayal[FlowerPatch]["Color"] = "Green"
         return portrayal[FlowerPatch]
 
-width = height = 30
+width = height = 25
 num_hives = 3
 
 grid = CanvasGrid(agent_portrayal, width, height, 500, 500)
@@ -55,7 +55,8 @@ server = ModularServer(BeeEvolutionModel,
                        "Bee Model",
                        {"alpha":alpha,
                         "forager_royal_ratio":forager_royal_ratio,
-                        "growth_factor":growth_factor})
+                        "growth_factor":growth_factor,
+                        "seed":1})
 
 server.port = 8521 # The default
 server.launch()
