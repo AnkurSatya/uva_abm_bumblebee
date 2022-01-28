@@ -355,16 +355,17 @@ class Hive(Agent):
 				agent_counts[(bee_type, "own")] = len(encounters['own_hive'])
 				agent_counts[(bee_type, "other")] = len(encounters['other_hive'])
 			
-			total_bees_encountered = sum(agent_counts.values())
-			if total_bees_encountered == 0:
-				b.health_level = 0
-				continue
+			# total_bees_encountered = sum(agent_counts.values())
+			# print(total_bees_encountered)
+			# if total_bees_encountered == 0:
+			# 	b.health_level = 0
+			# 	continue
 
-			agent_counts = {key:value/total_bees_encountered for key, value in agent_counts.items()}
+			# agent_counts = {key:value/total_bees_encountered for key, value in agent_counts.items()}
 			agent_probs = {
-				Worker: coeffs["forager_royal_ratio"]*(1-coeffs["alpha"]*agent_counts[(Worker, "own")] + (1-coeffs["alpha"])*agent_counts[(Worker, "other")]),
-				Drone : ((1-coeffs["forager_royal_ratio"])/2)*(1-coeffs["alpha"]*agent_counts[(Drone, "own")] + (1-coeffs["alpha"])*agent_counts[(Queen, "other")]),
-				Queen : ((1-coeffs["forager_royal_ratio"])/2)*(1-coeffs["alpha"]*agent_counts[(Queen, "own")] + (1-coeffs["alpha"])*agent_counts[(Drone, "other")])
+				Worker: coeffs["forager_royal_ratio"] * ((coeffs["alpha"]*agent_counts[(Worker, "own")] + (1-coeffs["alpha"])*agent_counts[(Worker, "other")])),
+				Drone : (1-coeffs["forager_royal_ratio"]/2) * ((coeffs["alpha"]*agent_counts[(Drone, "own")] - (1-coeffs["alpha"])*agent_counts[(Queen, "other")])),
+				Queen : (1-coeffs["forager_royal_ratio"]/2) * ((coeffs["alpha"]*agent_counts[(Queen, "own")] - (1-coeffs["alpha"])*agent_counts[(Drone, "other")]))
 			}
 
 			# 1. normalise into probabilities by dividing by sum
@@ -372,7 +373,11 @@ class Hive(Agent):
 			#    to the original ones by substracting from 1 and dividing by
 			#    2 to make sure they again add up to 1
 			prob_sum = sum(agent_probs.values())
+			if prob_sum == 0:
+				b.health_level = 0
+				continue
 			agent_probs = {bee_type: prob/prob_sum for bee_type, prob in agent_probs.items()}
+			print(agent_probs)
 
 			# add new agent and remove old one
 			new_agent = self.model.create_new_agent(
