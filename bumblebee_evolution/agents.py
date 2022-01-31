@@ -1,6 +1,15 @@
 from mesa import Agent
 import numpy as np
 
+'''
+In this file, there are all the agents used for the project. 
+1) general Bee agent from which the Queen, Worker and Drone class hinerit the common methods and attributes
+2) Worker class
+3) Drone class
+4) Queen class
+5) Flower patch class
+6) Hive class
+'''
 
 class Bee(Agent):
 	def __init__(self, unique_id, model, pos, hive, nectar_needed):
@@ -17,14 +26,16 @@ class Bee(Agent):
 		self.pos = pos
 		self.nectar_needed = nectar_needed
 		self.health_level = 0 # health is empty upon initialization
-		self.isCollecting = False
-		self.last_resource = None
+		self.isCollecting = False # false if the bee is not collectin, when it find a good resource will be switched to true
+		self.last_resource = None # store the last good resource for the bee, since the bumblebees will always return there if it was a good resource
+		# dictionary with all the encounters made by a bee, in the dictionary, all the unique_ids will be stored in order to avoit to count the same bee twice
 		self.encounters = {
 			Worker:{"own_hive":set(), "other_hive":set()},
 			Drone:{"own_hive":set(), "other_hive":set()},
 			Queen:{"own_hive":set(), "other_hive":set()}
 		}
 
+	# function that will upload the encunters of a bee
 	def update_encounters(self):
 		if self.pos in self.model.hive_positions:
 			return
@@ -58,7 +69,7 @@ class Bee(Agent):
 		self.model.grid.move_agent(self, tuple(new_pos))
 		self.update_encounters()
 
-	def check_cell_for_nectar(self, threshold=0): # TODO : update threshold value?
+	def check_cell_for_nectar(self, threshold=0): # it is possible to use a different treshold value in order to make a bee more selective
 		'''
 		This method should check if the cell is good enough to start collecting food.
 		'''
@@ -74,7 +85,7 @@ class Bee(Agent):
 
 	def collect(self, flower_patch):
 		'''
-		This method should collect the nectar from the cell.
+		This method should collect the nectar from the cell. The bee will collect all the nectar that it needs to eat or all the nectar in the flower
 		'''
 		amount_to_withdraw = min(self.nectar_needed - self.health_level, flower_patch.nectar_units)
 		self.health_level += amount_to_withdraw
@@ -82,9 +93,14 @@ class Bee(Agent):
 		self.isCollecting = True
 
 	def move_towards_hive(self):
-		difference =  np.array(self.hive.pos) - np.array(self.pos)
-		self.model.grid.move_agent(self, (self.pos[0]+np.sign(difference[0]), self.pos[1]+np.sign(difference[1])))
-		self.update_encounters()
+		'''
+		When called, this method will move the bee to its own hive one step at a time, as well as updating the encounters in the meantime
+		'''
+		difference =  np.array(self.hive.pos) - np.array(self.pos) # find direction 
+		# moving the agent to the new position
+		self.model.grid.move_agent(self, (self.pos[0]+np.sign(difference[0]), self.pos[1]+np.sign(difference[1]))) 
+		# updating encounters
+		self.update_encounters() 
 
 	def move_towards_resource(self):
 		difference =  np.array(self.last_resource) - np.array(self.pos)
@@ -104,7 +120,7 @@ class Worker(Bee):
 		"""
 		super().__init__(unique_id, model, pos, hive, nectar_needed)
 		self.max_nectar = 44  # bumble bees carry average of ~25% their body weight, which is 150-200mg, so about 44mg
-		self.stored_nectar = 0
+		self.stored_nectar = 0 # initialising the stored nectar to 0
 		self.bee_type = Worker
 
 	def drop_nectar(self):
@@ -117,8 +133,11 @@ class Worker(Bee):
 	def collect(self, flower_patch):
 		# worker bees cannot directly replenish their own health, that happens in the hive at end of day
 		amount_to_withdraw = min(self.max_nectar-self.stored_nectar, flower_patch.nectar_units)
+		# removing the nectar from the flower patch
 		flower_patch.withdraw_nectar(amount_to_withdraw)
 		self.stored_nectar += amount_to_withdraw
+		# setting isCollecting to True, this is done because now that the bee collected the nectar, 
+		# will spend the next step frozen
 		self.isCollecting = True
 
 	def step(self):
