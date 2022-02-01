@@ -8,7 +8,7 @@ __pycache__/
 =======
 __pycache__/
 *.py[cod]
->>>>>>> model_revision
+.DS_Store
 
 Pipfile
 bumblebee_evolution/.ipynb_checkpoints/

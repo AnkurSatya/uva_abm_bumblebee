@@ -2,7 +2,7 @@ from model import BeeEvolutionModel
 import matplotlib.pyplot as plt
 from agents import *
 
-model = BeeEvolutionModel(alpha = 0.5, forager_royal_ratio = 0.5, growth_factor = 0.5)
+model = BeeEvolutionModel(alpha=0.5, forager_royal_ratio=0.2, growth_factor=0.5, resource_variability=0.25, seed=0)
 model.run_model()
 data = model.datacollector.get_model_vars_dataframe()
 print(data)

@@ -190,8 +190,6 @@ class Drone(Bee):
 		# spend a timestep collecting food
 		if self.isCollecting:
 			self.isCollecting = False
-			if self.health_level < self.nectar_needed and self.check_cell_for_nectar():
-				self.last_resource = self.pos
 			return
 
 		# take a random step
@@ -379,9 +377,9 @@ class Hive(Agent):
 
 			agent_counts = {key:value/total_bees_encountered for key, value in agent_counts.items()}
 			agent_probs = {
-				Worker: 1 - coeffs["forager_royal_ratio"] * ((coeffs["alpha"]*agent_counts[(Worker, "own")] + (1-coeffs["alpha"])*agent_counts[(Worker, "other")])),
-				Drone : 1 - (1-coeffs["forager_royal_ratio"]/2) * ((coeffs["alpha"]*agent_counts[(Drone, "own")] - (1-coeffs["alpha"])*agent_counts[(Queen, "other")])),
-				Queen : 1 - (1-coeffs["forager_royal_ratio"]/2) * ((coeffs["alpha"]*agent_counts[(Queen, "own")] - (1-coeffs["alpha"])*agent_counts[(Drone, "other")]))
+				Worker: coeffs["forager_royal_ratio"] * (1 - (coeffs["alpha"]*agent_counts[(Worker, "own")] + (1-coeffs["alpha"])*agent_counts[(Worker, "other")])),
+				Drone : ((1 - coeffs["forager_royal_ratio"])/2) * (1-(coeffs["alpha"]*agent_counts[(Drone, "own")]) + (1-coeffs["alpha"])*agent_counts[(Queen, "other")]),
+				Queen : ((1 - coeffs["forager_royal_ratio"])/2) * (1-(coeffs["alpha"]*agent_counts[(Queen, "own")]) + (1-coeffs["alpha"])*agent_counts[(Drone, "other")])
 			}
 
 			# 1. normalise into probabilities by dividing by sum

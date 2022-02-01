@@ -13,8 +13,8 @@ seed = int(args.seed)
 # We define our variables and bounds
 problem = {
     'num_vars': 3,
-    'names': ['alpha', 'forager_royal_ratio', 'growth_factor'],
-    'bounds': [[0.0, 1.0], [0.0, 1.0], [0.0, 1.0]]
+    'names': ['forager_royal_ratio', 'growth_factor', "resource_variability"],
+    'bounds': [[0.0, 1.0], [0.0, 1.0], [0.0, 0.5]]
 }
 
 # Set the repetitions, the amount of steps, and the amount of distinct values per variable
@@ -22,7 +22,7 @@ replicates = 1
 distinct_samples = 512
 
 # We get all our samples here
-param_values = saltelli.sample(problem, distinct_samples)
+param_values = saltelli.sample(problem, distinct_samples, calc_second_order=False)
 
 tuples = set()
 for i in range(len(param_values)):
@@ -30,9 +30,9 @@ for i in range(len(param_values)):
 print(f"Running {replicates} replicate(s) for {len(tuples)} unique parameter combinations")
 
 variable_parameters = [
-	{"alpha":param_values[i][0], 
-	 "forager_royal_ratio":param_values[i][1], 
-	 "growth_factor":param_values[i][2]}
+	{"forager_royal_ratio":param_values[i][0], 
+	 "growth_factor":param_values[i][1], 
+	 "resource_variability":param_values[i][2]}
 	 for i in range(len(param_values))
 ]
 
