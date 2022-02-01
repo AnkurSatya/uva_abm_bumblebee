@@ -10,8 +10,8 @@ from agents import *
 
 
 class BeeEvolutionModel(Model):
-    def __init__(self, alpha, forager_royal_ratio, growth_factor, 
-                 seed, width=25, height=25, num_hives=3,
+    def __init__(self, forager_royal_ratio, growth_factor, resource_variability,
+                 seed, alpha=0.5, width=25, height=25, num_hives=3,
                  initial_bees_per_hive=3,
                  daily_steps=400, N_days=30):
         """
@@ -30,7 +30,7 @@ class BeeEvolutionModel(Model):
                            "forager_royal_ratio":forager_royal_ratio,
                            "growth_factor":growth_factor}
         self.rng = np.random.default_rng(seed)
-        self.resource_variability = self.rng.uniform(0, 0.5)
+        self.resource_variability = resource_variability
         self.height = height
         self.width = width
         self.grid = MultiGrid(width, height, torus=False) # Torus should be false wrapping up the space does not make sense here.
@@ -38,7 +38,7 @@ class BeeEvolutionModel(Model):
         self.current_id = 0
         self.num_hives = num_hives
 
-        # TODO : this may be needed by the batch runner, but we don't need to do anything with it, it just counts steps?
+        # default scheduler, used by batch runner for step counting
         self.schedule = BaseScheduler(self) 
 
         # create schedules
@@ -110,7 +110,7 @@ class BeeEvolutionModel(Model):
 
         # number of desired flower patches
         num_flower_patches = self.height*self.width - len(hives_pos)
-        nectar = self.rng.normal(self.mean_nectar_units, self.resource_variability*self.mean_nectar_units)
+        nectar = max(0, self.rng.normal(self.mean_nectar_units, self.resource_variability*self.mean_nectar_units))
         nectar_for_one_patch = nectar/num_flower_patches
 
         # dictionary of flower patches and nectar quantities
