@@ -190,8 +190,6 @@ class Drone(Bee):
 		# spend a timestep collecting food
 		if self.isCollecting:
 			self.isCollecting = False
-			if self.health_level < self.nectar_needed and self.check_cell_for_nectar():
-				self.last_resource = self.pos
 			return
 
 		# take a random step
