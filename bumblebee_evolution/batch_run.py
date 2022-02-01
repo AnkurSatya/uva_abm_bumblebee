@@ -22,7 +22,7 @@ replicates = 1
 distinct_samples = 512
 
 # We get all our samples here
-param_values = saltelli.sample(problem, distinct_samples)
+param_values = saltelli.sample(problem, distinct_samples, calc_second_order=False)
 
 tuples = set()
 for i in range(len(param_values)):
