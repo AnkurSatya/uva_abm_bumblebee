@@ -9,3 +9,7 @@ __pycache__/
 __pycache__/
 *.py[cod]
 >>>>>>> model_revision
+
+Pipfile
+bumblebee_evolution/.ipynb_checkpoints/
+bumblebee_evolution/Untitled.ipynb
