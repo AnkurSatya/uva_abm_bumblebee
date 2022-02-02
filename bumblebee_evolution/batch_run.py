@@ -22,23 +22,21 @@ replicates = 1
 distinct_samples = 512
 
 # We get all our samples here
-param_values = saltelli.sample(problem, distinct_samples, calc_second_order=False)
+# param_values = saltelli.sample(problem, distinct_samples, calc_second_order=False)
+# tuples = set()
+# for i in range(len(param_values)):
+# 	tuples.add(tuple(param_values[i]))
+# print(f"Running {replicates} replicate(s) for {len(tuples)} unique parameter combinations")
+# variable_parameters = [
+# 	{"forager_royal_ratio":param_values[i][0], 
+# 	 "growth_factor":param_values[i][1], 
+# 	 "resource_variability":param_values[i][2]}
+# 	 for i in range(len(param_values))
+# ]
 
-tuples = set()
-for i in range(len(param_values)):
-	tuples.add(tuple(param_values[i]))
-print(f"Running {replicates} replicate(s) for {len(tuples)} unique parameter combinations")
-
-variable_parameters = [
-	{"forager_royal_ratio":param_values[i][0], 
-	 "growth_factor":param_values[i][1], 
-	 "resource_variability":param_values[i][2]}
-	 for i in range(len(param_values))
-]
-
-# variable_parameters = {"alpha":list(set([row[0] for row in param_values])),
-# 					   "forager_royal_ratio":list(set([row[1] for row in param_values])),
-# 					   "growth_factor":list(set([row[2] for row in param_values]))}
+# load preset saltelli sample of parameters
+with open("variable_parameters.pickle", "rb") as f:
+	variable_parameters = pickle.load(f)
 
 batch = BatchRunnerMP(BeeEvolutionModel,
 					  fixed_parameters={"seed":seed},
