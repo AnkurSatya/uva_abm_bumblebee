@@ -11,30 +11,18 @@ def main():
 	args = parser.parse_args()
 	seed = int(args.seed)
 
-	# We define our variables and bounds
+	# We define our variables and bounds, then with a saltelli sample the we generate 512 dinstinct values for each parameter
+	# the sample is in the file variable_parameters.pickle
+
 	# problem = {
 	# 	'num_vars': 3,
 	# 	'names': ['forager_royal_ratio', 'growth_factor', "resource_variability"],
 	# 	'bounds': [[0.0, 1.0], [0.0, 1.0], [0.0, 0.5]]
 	# }
 
-	# Set the repetitions, the amount of steps, and the amount of distinct values per variable
+	# Set the repetitions
 	replicates = 1
-	#distinct_samples = 512
-
-	# We get all our samples here
-	# param_values = saltelli.sample(problem, distinct_samples, calc_second_order=False)
-	# tuples = set()
-	# for i in range(len(param_values)):
-	# 	tuples.add(tuple(param_values[i]))
-	# print(f"Running {replicates} replicate(s) for {len(tuples)} unique parameter combinations")
-	# variable_parameters = [
-	# 	{"forager_royal_ratio":param_values[i][0], 
-	# 	 "growth_factor":param_values[i][1], 
-	# 	 "resource_variability":param_values[i][2]}
-	# 	 for i in range(len(param_values))
-	# ]
-
+	
 	# load preset saltelli sample of parameters
 	with open("variable_parameters.pickle", "rb") as f:
 		variable_parameters = pickle.load(f)
@@ -46,6 +34,7 @@ def main():
 						display_progress=True)
 	batch.run_all()
 
+  # collection of the data
 	data = batch.get_collector_model()
 	with open(f"results/data_{seed}.pickle", 'wb') as f:
 		pickle.dump(data, f)
