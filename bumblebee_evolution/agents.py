@@ -311,7 +311,7 @@ class Hive(Agent):
 		super().__init__(unique_id, model)
 		self.pos = pos
 		self.nectar_units = 0
-		self.bees = set()
+		self.bees = []
 		self.number_fertilized_queens = 0
 
 	def add_bee(self, bee):
@@ -320,7 +320,7 @@ class Hive(Agent):
 		Args:
 			bee (Bee): bee to be added to the hive.
 		"""
-		self.bees.add(bee)
+		self.bees.append(bee)
 
 	def remove_bee(self, bee):
 		"""
@@ -328,7 +328,7 @@ class Hive(Agent):
 		Args:
 			bee (Bee): bee to be removed from the hive.
 		"""
-		self.bees.discard(bee)
+		self.bees.remove(bee)
 
 	def bees_to_hive(self):
 		for b in self.bees:
