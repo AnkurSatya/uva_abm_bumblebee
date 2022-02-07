@@ -177,7 +177,7 @@ class BeeEvolutionModel(Model):
         for _ in tqdm(range(self.N_days)): 
             for _ in range(self.daily_steps):
                 self.step()
-        self.datacollector.collect(self)
+        #self.datacollector.collect(self)
 
     def get_bees_of_each_type(self, bee_type, hive=None):
         """
