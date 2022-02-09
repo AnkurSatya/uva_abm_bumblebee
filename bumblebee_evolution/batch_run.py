@@ -1,25 +1,25 @@
 from batchrunner import BatchRunnerMP
 from model import BeeEvolutionModel
-from SALib.sample import saltelli
 from agents import *
 import argparse
 import pickle
 
 def main():
+
+	"""
+	This function should run the model for the global sensitivity anlysis, using the datafile
+	variable_parameters.pickle.
+
+	In that file there are all the set of parameters produced using the saltelli sample.
+	When clled, this file require to enter the random seed.
+	"""
+
 	parser = argparse.ArgumentParser()
-	parser.add_argument('--seed', required=True, help='Enter your random seed. GET IT RIGHT. PLZ.')
+	parser.add_argument('--seed', required=True, help='Enter your random seed.')
 	args = parser.parse_args()
 	seed = int(args.seed)
 
-	# We define our variables and bounds, then with a saltelli sample the we generate 512 dinstinct values for each parameter
-	# the sample is in the file variable_parameters.pickle
-
-	# problem = {
-	# 	'num_vars': 3,
-	# 	'names': ['forager_royal_ratio', 'growth_factor', "resource_variability"],
-	# 	'bounds': [[0.0, 1.0], [0.0, 1.0], [0.0, 0.5]]
-	# }
-
+	
 	# Set the repetitions
 	replicates = 1
 	

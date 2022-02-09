@@ -191,5 +191,8 @@ class BeeEvolutionModel(Model):
             return len([agent for agent in self.schedule_bees_and_flower_patches.agents if isinstance(agent, bee_type)])
 
     def get_total_fertilized_queens(self):
+        """
+        Get the number of fertilized queens
+        """
         if self.step_count % self.daily_steps == 0:
             return sum([h.number_fertilized_queens for h in self.hives])

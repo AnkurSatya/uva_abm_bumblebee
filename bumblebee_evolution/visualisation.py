@@ -2,8 +2,15 @@ from model import *
 from mesa.visualization.modules import CanvasGrid, ChartModule
 from mesa.visualization.ModularVisualization import ModularServer
 
+"""
+In this file is possible to look at the behaviour of the model using mesa visualisation.
+"""
 
 def agent_portrayal(agent):
+    """
+    This method change the color and the shape of an agent in the visualisation, 
+    depending on the type of the agent.
+    """
     portrayal = {
         Drone       : {"Shape":"circle", "r":0.3, "Color":"Yellow", "Filled":"false", "Layer":3},
         Queen       : {"Shape":"circle", "r":0.8, "Color":"Red", "Filled":"false", "Layer":1},
