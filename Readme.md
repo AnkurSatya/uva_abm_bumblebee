@@ -1,5 +1,3 @@
-README
-
 The bumblebee_evolution folder contain the code for the project of group 16, for the Agent Based Modelling course in the University of Amsterdam.
 The goal of the project is to study, using an agent based model, the reproductive succes of the bumblebees, in the scenario in which they are able to switch role at the end of the day.
 
@@ -14,30 +12,31 @@ In the code, 4 parameters are crucial:
    Moreover, it's possible to change other variables in the code, such as the grid-size, the time-steps or the number of hives. As
    well as the total amount of nectar in the environment and its variability in the simulation.
 
-Code instructions:
+## Code instructions:
 
 The code is structured as follow:
 
-agents.py : all the entities of the model are defined here (bees, hives and flower patches).
+**agents.py** : all the entities of the model are defined here (bees, hives and flower patches).
 
-batch_run.py : in this file the model is executed for multiple values of the parameters (in variable_parameters.pickle)
+**batch_run.py** : in this file the model is executed for multiple values of the parameters (in variable_parameters.pickle)
 sampled using the Saltelli sample in order to perform the global sensitivity analysis.
 
-batchrunner.py : imported file from mesa library, with changes in line404 in order to import the set of parameters from the saltelli sample, and to parallelize the code.
+**batchrunner.py** : imported file from MESA library, with changes in line 404 in order to import the set of parameters from the saltelli sample, and to parallelize the code.
 
-model.py : the logic of model is defined in this file.
+**model.py** : the logic of model is defined in this file.
 
-run.py : here the model can be executed for just one "season".
+**run.py** : here the model can be executed for just one "season".
 
-sesnitivity_analysis.ipynp : OFAT sensitivity analysis.
+**sensitivity_analysis.ipynb** : OFAT sensitivity analysis.
 
-visualisation.py : running this file it's possible to visualise the behaviour of the model.
+**results/Global Sensitivity Analysis.ipynb** : global sensitivity analysis.
 
-To download the very latest source, do this:
+**visualisation.py** : running this file it's possible to visualise the behaviour of the model.
 
-'git clone https://github.com/AnkurSatya/uva_abm_bumblebee.git'
+To download the very latest source, run:
 
+`git clone https://github.com/AnkurSatya/uva_abm_bumblebee.git`
 
 Before running any code, make sure the required packages are installed:
 
-'pip install -r requirements.txt'
+`pip install -r requirements.txt`
