@@ -1,4 +1,3 @@
-## Class for the Bee evolution model
 from mesa.time import RandomActivation, BaseScheduler
 from mesa.datacollection import DataCollector
 from mesa.space import MultiGrid
@@ -17,12 +16,18 @@ class BeeEvolutionModel(Model):
                  daily_data_collection=False):
         """
         Args:
+            forager_royal_ratio (float): coefficient for mutation
+            growth_factor (float): specifies the growth strategy of hive 
+            resource_variability (float): amount of resource variability
+            seed (int): random seed
+            alpha (float): emphasis between encounters from different hives
             width (int): width of the grid.
             height (int): height of the grid.
             num_hives (int): number of hives to be placed in the environment.
             initial_bees_per_hive (int): number of bees to be associated with a hive.
             daily_steps (int): number of steps to be run to simulate a day.
-            rng: a numpy random number generator
+            N_days (int): number of days to run in a simulation
+            daily_data_collection (boolean): whether to collect data daily
         """
         self.daily_data_collection = daily_data_collection
         self.N_days = N_days
@@ -31,7 +36,6 @@ class BeeEvolutionModel(Model):
         self.parameters = {"alpha":alpha,
                            "forager_royal_ratio":forager_royal_ratio,
                            "growth_factor":growth_factor}
-        self.rng = np.random.default_rng(seed)
         self.resource_variability = resource_variability
         self.height = height
         self.width = width
@@ -39,6 +43,9 @@ class BeeEvolutionModel(Model):
         self.grid_locations = set(product(range(self.height), range(self.width)))
         self.current_id = 0
         self.num_hives = num_hives
+
+        # initialise random number generator
+        self.rng = np.random.default_rng(seed)
 
         # default scheduler, used by batch runner for step counting
         self.schedule = BaseScheduler(self) 
@@ -82,9 +89,11 @@ class BeeEvolutionModel(Model):
         """
         hives = []
         hive_positions = [tuple(item) for item in self.rng.choice(list(self.grid_locations), size=self.num_hives, replace=False)]
+
         for _, pos in enumerate(hive_positions):
             new_hive = self.create_new_agent(Hive, pos)
             hives.append(new_hive)
+
             # add bees to new hive
             for bee_class, ratio in self.initial_bee_type_ratio.items():
                 num_bees_of_type = max(1, int(ratio*self.initial_bees_per_hive))
@@ -141,6 +150,9 @@ class BeeEvolutionModel(Model):
     def remove_agent(self, agent):
         '''
         Removes an agent from the environment.
+
+        args:
+            agent (Agent): agent to remove from the environment.
         '''
         # Remove agent
         self.grid.remove_agent(agent)
@@ -152,11 +164,11 @@ class BeeEvolutionModel(Model):
     def step(self):
         '''
         Method that steps every agent. 
-        Prevents applying step on new agents by creating a local list.
         '''
         self.step_count += 1
         self.schedule_bees_and_flower_patches.step()
         
+        # end of day actions
         if self.step_count % self.daily_steps == 0:
             # create new flower patches
             for agent in self.schedule_bees_and_flower_patches.agents:
@@ -166,9 +178,11 @@ class BeeEvolutionModel(Model):
             self.schedule_hives.step()
             if self.daily_data_collection:
                 self.datacollector.collect(self)
+
+            # generate random move values for the next day
             self.random_move_values = list(self.rng.uniform(0, 1, size=sum([len(h.bees) for h in self.hives])*self.daily_steps))
             
-            #print(f"finished a day... params : {self.parameters}, step count {self.step_count}")
+            # end of simulation
             if self.step_count == self.N_days*self.daily_steps:
                 self.datacollector.collect(self)
                 self.running = False
@@ -181,11 +195,14 @@ class BeeEvolutionModel(Model):
         for _ in tqdm(range(self.N_days)): 
             for _ in range(self.daily_steps):
                 self.step()
-        #self.datacollector.collect(self)
 
     def get_bees_of_each_type(self, bee_type, hive=None):
         """
         Get the number of bees of the given type and optionally hive.
+
+        Args:
+            bee_type (class type): type of bees
+            hive (Hive): calculate bees of this hive only
         """
         if self.step_count % self.daily_steps != 0:
             return
