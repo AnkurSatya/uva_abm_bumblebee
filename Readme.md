@@ -1,4 +1,4 @@
-The bumblebee_evolution folder contain the code for the project of group 16, for the Agent Based Modelling course in the University of Amsterdam.
+The bumblebee_evolution folder contains the code for the project of group 16, for the Agent Based Modelling course in the University of Amsterdam.
 The goal of the project is to study, using an agent based model, the reproductive succes of the bumblebees, in the scenario in which they are able to switch role at the end of the day.
 
 In particular every bee will take account of the encountered bees during the day (from both its hive and the other hives).
