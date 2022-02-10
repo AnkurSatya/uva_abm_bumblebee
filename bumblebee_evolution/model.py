@@ -13,7 +13,8 @@ class BeeEvolutionModel(Model):
     def __init__(self, forager_royal_ratio, growth_factor, resource_variability,
                  seed, alpha=0.5, width=25, height=25, num_hives=3,
                  initial_bees_per_hive=3,
-                 daily_steps=400, N_days=30):
+                 daily_steps=400, N_days=30,
+                 daily_data_collection=False):
         """
         Args:
             width (int): width of the grid.
@@ -23,6 +24,7 @@ class BeeEvolutionModel(Model):
             daily_steps (int): number of steps to be run to simulate a day.
             rng: a numpy random number generator
         """
+        self.daily_data_collection = daily_data_collection
         self.N_days = N_days
         self.daily_steps = daily_steps
         self.step_count = 0
@@ -71,7 +73,8 @@ class BeeEvolutionModel(Model):
                     lambda m, b=bee_type, h=hive: m.get_bees_of_each_type(b, h))
 
         self.datacollector = DataCollector(model_reporters=model_reporters)
-        #self.datacollector.collect(self)
+        if self.daily_data_collection:
+            self.datacollector.collect(self)
 
     def setup_hives_and_bees(self):
         """
@@ -161,7 +164,8 @@ class BeeEvolutionModel(Model):
                     self.remove_agent(agent)
             self.setup_flower_patches()
             self.schedule_hives.step()
-            #self.datacollector.collect(self)
+            if self.daily_data_collection:
+                self.datacollector.collect(self)
             self.random_move_values = list(self.rng.uniform(0, 1, size=sum([len(h.bees) for h in self.hives])*self.daily_steps))
             
             #print(f"finished a day... params : {self.parameters}, step count {self.step_count}")
