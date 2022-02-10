@@ -1,10 +1,9 @@
-import resource
 from model import *
 from mesa.visualization.modules import CanvasGrid, ChartModule
 from mesa.visualization.ModularVisualization import ModularServer
 
 """
-In this file is possible to look at the behaviour of the model using mesa visualisation.
+In this file is possible to look at the behaviour of the model using MESA visualisation.
 """
 
 def agent_portrayal(agent):
@@ -60,13 +59,14 @@ growth_factor = 0.5
 resource_variability = 0.25
 
 server = ModularServer(BeeEvolutionModel,
-                       [grid],#, chart_bees, chart_fertilized_queens] + hive_charts,
+                       [grid, chart_bees, chart_fertilized_queens] + hive_charts,
                        "Bee Model",
                        {"alpha":alpha,
                         "forager_royal_ratio":forager_royal_ratio,
                         "growth_factor":growth_factor,
                         "resource_variability": resource_variability,
-                        "seed":1})
+                        "seed":1,
+                        "daily_data_collection": True})
 
 server.port = 8521 # The default
 server.launch()
