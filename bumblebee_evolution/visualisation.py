@@ -1,3 +1,4 @@
+import resource
 from model import *
 from mesa.visualization.modules import CanvasGrid, ChartModule
 from mesa.visualization.ModularVisualization import ModularServer
@@ -56,6 +57,7 @@ chart_fertilized_queens = ChartModule([{"Label": "Total Fertilized Queens",
 alpha = 0.5
 forager_royal_ratio = 0.5
 growth_factor = 0.5
+resource_variability = 0.25
 
 server = ModularServer(BeeEvolutionModel,
                        [grid],#, chart_bees, chart_fertilized_queens] + hive_charts,
@@ -63,6 +65,7 @@ server = ModularServer(BeeEvolutionModel,
                        {"alpha":alpha,
                         "forager_royal_ratio":forager_royal_ratio,
                         "growth_factor":growth_factor,
+                        "resource_variability": resource_variability,
                         "seed":1})
 
 server.port = 8521 # The default
